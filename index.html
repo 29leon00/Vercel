@@ -2,37 +2,35 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>VR Cardboard avec menu scène cliquable</title>
+    <title>VR avec menu cliquable (tap écran)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   </head>
   <body style="margin: 0;">
     <a-scene vr-mode-ui="enabled: true">
 
-      <!-- Caméra avec curseur manuel -->
+      <!-- Caméra + curseur (sans fuse) -->
       <a-entity id="cameraRig" camera look-controls position="0 1.6 0">
-        <a-entity 
-          cursor="rayOrigin: mouse" 
-          position="0 0 -1"
-          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-          material="color: white; shader: flat">
+        <a-entity id="cursor"
+                  cursor="rayOrigin: entity" raycaster="objects: .clickable"
+                  position="0 0 -1"
+                  geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+                  material="color: white; shader: flat">
         </a-entity>
       </a-entity>
 
-      <!-- Cube interactif -->
+      <!-- Objet visible -->
       <a-box id="box" position="0 1.6 -3" color="#4CC3D9"></a-box>
 
       <!-- Menu VR cliquable -->
       <a-entity id="menu" position="0 1.6 -2">
-        <a-plane class="menu-button" 
-                 id="scene1" 
+        <a-plane class="clickable" id="scene1"
                  position="-0.7 0 0" 
                  width="0.6" height="0.3" 
                  color="#FFC65D" 
                  text="value: Scène 1; align: center">
         </a-plane>
-        <a-plane class="menu-button" 
-                 id="scene2" 
+        <a-plane class="clickable" id="scene2"
                  position="0.7 0 0" 
                  width="0.6" height="0.3" 
                  color="#7BC8A4" 
@@ -45,7 +43,7 @@
     </a-scene>
 
     <script>
-      // Gestion du clic tactile/écran uniquement
+      // Activer capteurs sur mobile (iOS)
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -61,7 +59,19 @@
         }
       });
 
-      // Attacher les écouteurs de clic
+      // Lors d'un tap n'importe où
+      document.addEventListener('click', () => {
+        const cursor = document.querySelector('#cursor');
+        const intersection = cursor.components.raycaster.getIntersection(
+          document.querySelector('.clickable')
+        );
+
+        if (intersection && intersection.object.el) {
+          intersection.object.el.emit('click');
+        }
+      });
+
+      // Gérer le clic sur chaque bouton
       document.addEventListener('DOMContentLoaded', function () {
         const scene1 = document.querySelector('#scene1');
         const scene2 = document.querySelector('#scene2');
@@ -75,15 +85,15 @@
         });
       });
 
-      // Fonction de changement de scène
-      function changeScene(sceneId) {
+      // Changement de scène
+      function changeScene(id) {
         const sky = document.querySelector('#sky');
         const box = document.querySelector('#box');
 
-        if (sceneId === 1) {
+        if (id === 1) {
           sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
           box.setAttribute('color', '#4CC3D9');
-        } else if (sceneId === 2) {
+        } else if (id === 2) {
           sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/chesapeake_bay.jpg');
           box.setAttribute('color', '#EF2D5E');
         }
