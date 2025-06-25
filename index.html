@@ -1,275 +1,99 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="utf-8" />
-  <title>VR Cardboard stéréoscopie sans gyro</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <style>
-    body, html {
-      margin: 0; padding: 0; overflow: hidden; height: 100%;
-      background: black;
-      color: white;
-      font-family: sans-serif;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    #leftEye, #rightEye {
-      position: fixed;
-      top: 0; 
-      width: 50vw; 
-      height: 100vh; 
-      overflow: hidden;
-      touch-action: none;
-    }
-    #leftEye { left: 0; }
-    #rightEye { right: 0; }
-    #controls {
-      position: fixed; 
-      bottom: 10px; 
-      left: 50%; 
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.5);
-      padding: 10px 15px;
-      border-radius: 8px;
-      z-index: 10;
-      display: flex; 
-      align-items: center;
-      gap: 10px;
-    }
-    #controls label {
-      user-select: none;
-    }
-    #message {
-      position: fixed;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.7);
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 14px;
-      z-index: 20;
-    }
-  </style>
-</head>
-<body>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>VR Cardboard avec rotation de tête + stéréoscopie</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  </head>
+  <body style="margin: 0;">
+    <a-scene vr-mode-ui="enabled: true" embedded id="scene">
+      <!-- Deux caméras : gauche et droite -->
+      <a-entity id="cameraRig" position="0 0 0">
+        <a-entity 
+          id="cameraLeft" 
+          camera="active: true; eye: left" 
+          look-controls 
+          position="-0.03 1.6 0">
+          <a-entity 
+            cursor="fuse: true; fuseTimeout: 1500" 
+            position="0 0 -1"
+            geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+            material="color: white; shader: flat">
+          </a-entity>
+        </a-entity>
 
-  <!-- Deux canvas pour split-screen -->
-  <canvas id="leftEye"></canvas>
-  <canvas id="rightEye"></canvas>
+        <a-entity 
+          id="cameraRight" 
+          camera="active: false; eye: right" 
+          look-controls
+          position="0.03 1.6 0">
+          <a-entity 
+            cursor="fuse: true; fuseTimeout: 1500" 
+            position="0 0 -1"
+            geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+            material="color: white; shader: flat">
+          </a-entity>
+        </a-entity>
+      </a-entity>
 
-  <!-- Slider pour rotation manuelle -->
-  <div id="controls">
-    <label for="yaw">Tourner : </label>
-    <input type="range" id="yaw" min="-180" max="180" value="0" step="1" />
-  </div>
+      <!-- Cube interactif -->
+      <a-box position="0 1.6 -3" color="#4CC3D9" onclick="alert('clic !')"></a-box>
 
-  <div id="message">Cliquez pour autoriser les capteurs (si demandé)</div>
+      <!-- Fond panoramique -->
+      <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
+    </a-scene>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/js/controls/DeviceOrientationControls.js"></script>
+    <!-- Script stéréoscopie -->
+    <script>
+      const sceneEl = document.querySelector('a-scene');
+      sceneEl.addEventListener('loaded', () => {
+        const renderer = sceneEl.renderer;
+        const cameraLeft = document.getElementById('cameraLeft').getObject3D('camera');
+        const cameraRight = document.getElementById('cameraRight').getObject3D('camera');
 
-  <script>
-    // Setup THREE.js scène A-Frame-like minimal
-    // On va créer une scène simple avec un cube et un skybox
-    const scene = new THREE.Scene();
+        // Taille du viewport
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
-    // Cube
-    const geometry = new THREE.BoxGeometry();
-    const material = new THREE.MeshStandardMaterial({ color: 0x4cc3d9 });
-    const cube = new THREE.Mesh(geometry, material);
-    cube.position.set(0, 1.6, -3);
-    scene.add(cube);
+        function onResize() {
+          sceneEl.renderer.setSize(width, height);
+        }
+        window.addEventListener('resize', onResize);
 
-    // Lumière
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(0, 10, 5);
-    scene.add(light);
-    scene.add(new THREE.AmbientLight(0x404040));
+        // Override render loop pour faire split-screen
+        sceneEl.renderer.setAnimationLoop(() => {
+          renderer.clear();
 
-    // Skybox panoramique (utilisation d'une sphère inversée)
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(
-      'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg',
-      (texture) => {
-        const sphereGeo = new THREE.SphereGeometry(500, 60, 40);
-        sphereGeo.scale(-1, 1, 1); // Inverser faces
-        const sphereMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
-        const sky = new THREE.Mesh(sphereGeo, sphereMat);
-        scene.add(sky);
-      }
-    );
+          // Vue gauche : left half
+          renderer.setViewport(0, 0, width / 2, height);
+          renderer.setScissor(0, 0, width / 2, height);
+          renderer.setScissorTest(true);
+          renderer.render(sceneEl.object3D, cameraLeft);
 
-    // Canvas & renderers setup
-    const leftCanvas = document.getElementById('leftEye');
-    const rightCanvas = document.getElementById('rightEye');
+          // Vue droite : right half
+          renderer.setViewport(width / 2, 0, width / 2, height);
+          renderer.setScissor(width / 2, 0, width / 2, height);
+          renderer.setScissorTest(true);
+          renderer.render(sceneEl.object3D, cameraRight);
+        });
+      });
 
-    function resizeCanvases() {
-      leftCanvas.width = window.innerWidth / 2;
-      leftCanvas.height = window.innerHeight;
-      rightCanvas.width = window.innerWidth / 2;
-      rightCanvas.height = window.innerHeight;
-
-      leftRenderer.setSize(leftCanvas.width, leftCanvas.height);
-      rightRenderer.setSize(rightCanvas.width, rightCanvas.height);
-
-      cameraLeft.aspect = leftCanvas.width / leftCanvas.height;
-      cameraLeft.updateProjectionMatrix();
-
-      cameraRight.aspect = rightCanvas.width / rightCanvas.height;
-      cameraRight.updateProjectionMatrix();
-    }
-
-    // Caméras pour les yeux
-    const eyeSeparation = 0.06;
-    const cameraLeft = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
-    cameraLeft.position.set(-eyeSeparation / 2, 1.6, 0);
-    const cameraRight = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
-    cameraRight.position.set(eyeSeparation / 2, 1.6, 0);
-
-    // Renderers WebGL
-    const leftRenderer = new THREE.WebGLRenderer({ canvas: leftCanvas, antialias: true });
-    const rightRenderer = new THREE.WebGLRenderer({ canvas: rightCanvas, antialias: true });
-    resizeCanvases();
-
-    // Rotation yaw manuelle en radians
-    let yaw = 0;
-
-    // Slider gestion
-    const slider = document.getElementById('yaw');
-    slider.addEventListener('input', e => {
-      yaw = THREE.MathUtils.degToRad(e.target.value);
-    });
-
-    // Controle orientation par capteurs (DeviceOrientationControls)
-    let deviceControls = null;
-    let deviceControlsEnabled = false;
-    let message = document.getElementById('message');
-
-    function enableDeviceOrientation() {
-      if (deviceControls) return; // déjà activé
-
-      deviceControls = new THREE.DeviceOrientationControls(cameraLeft, true);
-      // On lie la même orientation à la droite en copiant rotation
-      deviceControls.connect();
-      deviceControlsEnabled = true;
-      message.textContent = "Contrôle par capteurs activé (sans gyro)";
-    }
-
-    function disableDeviceOrientation() {
-      if (deviceControls) {
-        deviceControls.disconnect();
-        deviceControls = null;
-      }
-      deviceControlsEnabled = false;
-      message.textContent = "Contrôle manuel activé";
-    }
-
-    // Tenter d'activer capteurs à la demande (iOS / Chrome)
-    function requestDeviceOrientationPermission() {
-      if (
-        typeof DeviceOrientationEvent !== 'undefined' &&
-        typeof DeviceOrientationEvent.requestPermission === 'function'
-      ) {
-        DeviceOrientationEvent.requestPermission()
-          .then(response => {
-            if (response === 'granted') {
-              enableDeviceOrientation();
-            } else {
-              disableDeviceOrientation();
-              alert('Permission capteur refusée');
-            }
-          })
-          .catch(() => {
-            disableDeviceOrientation();
-          });
-      } else {
-        // Pas besoin de permission dans Chrome Android (ou desktop)
-        enableDeviceOrientation();
-      }
-    }
-
-    // Contrôle tactile manuel si pas de capteurs ou gyro refusé
-    let isDragging = false;
-    let previousX = 0;
-
-    function onTouchStart(e) {
-      isDragging = true;
-      previousX = e.touches ? e.touches[0].clientX : e.clientX;
-    }
-
-    function onTouchMove(e) {
-      if (!isDragging) return;
-      let currentX = e.touches ? e.touches[0].clientX : e.clientX;
-      let deltaX = currentX - previousX;
-      previousX = currentX;
-
-      const sensitivity = 0.005;
-      yaw += deltaX * sensitivity;
-
-      // Maj slider visuel
-      slider.value = THREE.MathUtils.radToDeg(yaw);
-    }
-
-    function onTouchEnd(e) {
-      isDragging = false;
-    }
-
-    [leftCanvas, rightCanvas].forEach(canvas => {
-      canvas.addEventListener('touchstart', onTouchStart, false);
-      canvas.addEventListener('touchmove', onTouchMove, false);
-      canvas.addEventListener('touchend', onTouchEnd, false);
-
-      canvas.addEventListener('mousedown', onTouchStart, false);
-      canvas.addEventListener('mousemove', onTouchMove, false);
-      canvas.addEventListener('mouseup', onTouchEnd, false);
-    });
-
-    // Positionner la caméra droite à partir de la gauche (copie rotation)
-    function syncRightCamera() {
-      cameraRight.position.copy(cameraLeft.position);
-      cameraRight.position.x += eyeSeparation;
-      cameraRight.rotation.copy(cameraLeft.rotation);
-      cameraRight.quaternion.copy(cameraLeft.quaternion);
-    }
-
-    // Boucle animation
-    function animate() {
-      requestAnimationFrame(animate);
-
-      if (deviceControlsEnabled && deviceControls) {
-        deviceControls.update();
-        // Copier orientation caméra gauche vers droite
-        syncRightCamera();
-      } else {
-        // Rotation manuelle
-        cameraLeft.position.set(-eyeSeparation / 2, 1.6, 0);
-        cameraLeft.rotation.set(0, yaw, 0);
-        cameraLeft.updateMatrixWorld();
-
-        syncRightCamera();
-      }
-
-      leftRenderer.render(scene, cameraLeft);
-      rightRenderer.render(scene, cameraRight);
-    }
-
-    animate();
-
-    // Resize window
-    window.addEventListener('resize', () => {
-      resizeCanvases();
-    });
-
-    // Demander la permission capteur au premier clic/tap
-    window.addEventListener('click', () => {
-      requestDeviceOrientationPermission();
-      // On enlève le message après la première tentative
-      message.style.display = 'none';
-    }, { once: true });
-
-  </script>
-</body>
+      // Demande permission capteurs (ton code d'origine)
+      window.addEventListener('click', function () {
+        if (typeof DeviceOrientationEvent !== 'undefined' &&
+            typeof DeviceOrientationEvent.requestPermission === 'function') {
+          DeviceOrientationEvent.requestPermission()
+            .then(function (response) {
+              if (response === 'granted') {
+                console.log('Orientation activée');
+              } else {
+                alert('Permission capteur refusée');
+              }
+            })
+            .catch(console.error);
+        }
+      });
+    </script>
+  </body>
 </html>
-
