@@ -2,17 +2,17 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>VR Cardboard avec rotation de tête et menu de scènes</title>
+    <title>VR Cardboard avec menu scène cliquable</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   </head>
   <body style="margin: 0;">
     <a-scene vr-mode-ui="enabled: true">
 
-      <!-- Caméra avec curseur -->
+      <!-- Caméra avec curseur manuel -->
       <a-entity id="cameraRig" camera look-controls position="0 1.6 0">
         <a-entity 
-          cursor="fuse: true; fuseTimeout: 1000" 
+          cursor="rayOrigin: mouse" 
           position="0 0 -1"
           geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
           material="color: white; shader: flat">
@@ -20,37 +20,32 @@
       </a-entity>
 
       <!-- Cube interactif -->
+      <a-box id="box" position="0 1.6 -3" color="#4CC3D9"></a-box>
 
-
-      <!-- Menu de sélection de scène -->
+      <!-- Menu VR cliquable -->
       <a-entity id="menu" position="0 1.6 -2">
         <a-plane class="menu-button" 
+                 id="scene1" 
                  position="-0.7 0 0" 
                  width="0.6" height="0.3" 
                  color="#FFC65D" 
-                 text="value: Scène 1; align: center"
-                 event-set__enter="_event: mouseenter; color: #FFAA00"
-                 event-set__leave="_event: mouseleave; color: #FFC65D"
-                 onclick="changeScene(1)">
+                 text="value: Scène 1; align: center">
         </a-plane>
         <a-plane class="menu-button" 
+                 id="scene2" 
                  position="0.7 0 0" 
                  width="0.6" height="0.3" 
                  color="#7BC8A4" 
-                 text="value: Scène 2; align: center"
-                 event-set__enter="_event: mouseenter; color: #379683"
-                 event-set__leave="_event: mouseleave; color: #7BC8A4"
-                 onclick="changeScene(2)">
+                 text="value: Scène 2; align: center">
         </a-plane>
       </a-entity>
 
-      <!-- Ciel panoramique -->
+      <!-- Fond panoramique -->
       <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
-
     </a-scene>
 
     <script>
-      // Gérer la permission capteur sur iOS/Android
+      // Gestion du clic tactile/écran uniquement
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -66,10 +61,24 @@
         }
       });
 
+      // Attacher les écouteurs de clic
+      document.addEventListener('DOMContentLoaded', function () {
+        const scene1 = document.querySelector('#scene1');
+        const scene2 = document.querySelector('#scene2');
+
+        scene1.addEventListener('click', function () {
+          changeScene(1);
+        });
+
+        scene2.addEventListener('click', function () {
+          changeScene(2);
+        });
+      });
+
       // Fonction de changement de scène
       function changeScene(sceneId) {
         const sky = document.querySelector('#sky');
-        const box = document.querySelector('a-box');
+        const box = document.querySelector('#box');
 
         if (sceneId === 1) {
           sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
@@ -82,5 +91,4 @@
     </script>
   </body>
 </html>
-
 
