@@ -2,21 +2,20 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Jeu VR - Tire sur les canards 🦆</title>
+  <title>Jeu VR - Tir sur Canards 🦆</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/super-hands@4.0.5/dist/aframe-super-hands.min.js"></script>
 </head>
 <body style="margin: 0;">
-  <a-scene vr-mode-ui="enabled: true">
+  <a-scene>
+    <!-- Caméra + main + curseur -->
+    <a-entity id="cameraRig" position="0 1.6 0">
+      <a-entity id="camera" camera look-controls position="0 0 0"></a-entity>
 
-    <!-- Caméra + curseur -->
-    <a-entity id="cameraRig" camera look-controls position="0 1.6 0">
-      <a-entity id="cursor"
-                cursor="rayOrigin: entity" raycaster="objects: .clickable"
-                position="0 0 -1"
-                geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
-                material="color: white; shader: flat">
+      <!-- Main avec pistolet -->
+      <a-entity id="hand" position="0.3 -0.5 -0.8" rotation="0 0 0">
+        <a-box id="gun" color="black" depth="0.3" height="0.1" width="0.2" position="0 0 0"></a-box>
       </a-entity>
     </a-entity>
 
@@ -26,110 +25,91 @@
     <!-- Score affiché -->
     <a-text id="scoreText" value="Score: 0" position="-0.6 2 -1" color="white" width="3"></a-text>
 
-    <!-- Canards -->
-    <a-entity id="duck1" class="clickable duck"
-      gltf-model="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/Duck/glTF/Duck.gltf"
-      position="1 1 -3"
-      scale="0.3 0.3 0.3"
-      animation-mixer></a-entity>
-
-    <a-entity id="duck2" class="clickable duck"
-      gltf-model="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/Duck/glTF/Duck.gltf"
-      position="-1 1 -2"
-      scale="0.3 0.3 0.3"
-      animation-mixer></a-entity>
-
-    <a-entity id="duck3" class="clickable duck"
-      gltf-model="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/Duck/glTF/Duck.gltf"
-      position="0 1.2 -4"
-      scale="0.3 0.3 0.3"
-      animation-mixer></a-entity>
-
-    <!-- Menu emojis arrondi -->
+    <!-- Menu emojis -->
 
 
+    <!-- Canards (placés dynamiquement) -->
+    <a-entity id="duck-container"></a-entity>
   </a-scene>
 
   <script>
-    // Capteurs iOS
-    window.addEventListener('click', function () {
-      if (typeof DeviceOrientationEvent !== 'undefined' &&
-          typeof DeviceOrientationEvent.requestPermission === 'function') {
-        DeviceOrientationEvent.requestPermission()
-          .then(response => {
-            if (response === 'granted') console.log('Orientation activée');
-            else alert('Permission capteur refusée');
-          })
-          .catch(console.error);
-      }
-    });
-
-    // Avancer en cliquant dans le vide
-    document.addEventListener("click", () => {
-      const cursor = document.querySelector("#cursor");
-      const intersections = cursor.components.raycaster.intersections;
-
-      if (intersections.length > 0) {
-        const target = intersections[0].object.el;
-        if (target && target.classList.contains("clickable")) {
-          target.emit("click");
-          return;
-        }
-      }
-
-      const cameraRig = document.querySelector("#cameraRig");
-      const camera = cameraRig.components.camera.camera;
-      const direction = new THREE.Vector3();
-      camera.getWorldDirection(direction);
-
-      const currentPos = cameraRig.getAttribute("position");
-      const step = 0.5;
-
-      const newPos = {
-        x: currentPos.x + direction.x * step,
-        y: currentPos.y + direction.y * step,
-        z: currentPos.z + direction.z * step,
-      };
-
-      cameraRig.setAttribute("position", newPos);
-    });
-
-    // Score et tirs
+    const duckModel = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/Duck/glTF/Duck.gltf";
+    const duckCount = 3;
     let score = 0;
+    let ducksRemaining = duckCount;
 
-    function shootDuck(el) {
-      el.parentNode.removeChild(el);
-      score++;
-      document.querySelector('#scoreText').setAttribute('value', `Score: ${score}`);
-    }
+    // Ajouter un projectile (balle)
+    function shootProjectile() {
+      const scene = document.querySelector("a-scene");
+      const camera = document.querySelector("#camera");
 
-    // Déplacement aléatoire des canards
-    function randomizeDuckPositions() {
-      const ducks = document.querySelectorAll(".duck");
-      ducks.forEach(duck => {
-        const x = (Math.random() - 0.5) * 4;
-        const y = 1 + Math.random() * 0.5;
-        const z = -2 - Math.random() * 3;
-        duck.setAttribute("position", `${x} ${y} ${z}`);
+      const bullet = document.createElement("a-sphere");
+      bullet.setAttribute("radius", "0.03");
+      bullet.setAttribute("color", "yellow");
+      bullet.setAttribute("position", camera.object3D.position);
+      bullet.setAttribute("velocity", getCameraDirection().multiplyScalar(5));
+      bullet.setAttribute("dynamic-body", "mass: 0.1;");
+
+      bullet.classList.add("projectile");
+
+      bullet.addEventListener("collide", function (e) {
+        const duck = e.detail.body.el;
+        if (duck && duck.classList.contains("duck")) {
+          // Supprime canard
+          duck.parentNode.removeChild(duck);
+          ducksRemaining--;
+          score++;
+          document.querySelector("#scoreText").setAttribute("value", `Score: ${score}`);
+
+          if (ducksRemaining <= 0) {
+            setTimeout(spawnDucks, 1000);
+          }
+        }
+        // Supprimer projectile après impact
+        bullet.parentNode.removeChild(bullet);
       });
+
+      scene.appendChild(bullet);
     }
 
-    // Initialisation
+    // Fonction pour obtenir la direction de la caméra
+    function getCameraDirection() {
+      const direction = new THREE.Vector3();
+      document.querySelector("#camera").object3D.getWorldDirection(direction);
+      return direction;
+    }
+
+    // Créer les canards à des positions aléatoires
+    function spawnDucks() {
+      const container = document.getElementById("duck-container");
+      container.innerHTML = "";
+      ducksRemaining = duckCount;
+
+      for (let i = 0; i < duckCount; i++) {
+        const duck = document.createElement("a-entity");
+        duck.setAttribute("gltf-model", duckModel);
+        duck.setAttribute("scale", "0.3 0.3 0.3");
+        duck.setAttribute("position", `${(Math.random() - 0.5) * 4} ${1 + Math.random()} ${-2 - Math.random() * 3}`);
+        duck.setAttribute("class", "duck");
+        duck.setAttribute("static-body", "");
+        container.appendChild(duck);
+      }
+    }
+
+    // Initialisation du jeu
     document.addEventListener("DOMContentLoaded", () => {
-      const ducks = document.querySelectorAll(".duck");
-      ducks.forEach(duck => {
-        duck.addEventListener("click", () => shootDuck(duck));
+      spawnDucks();
+
+      document.addEventListener("click", () => {
+        shootProjectile();
       });
 
-      // Change position toutes les 2s
-      setInterval(randomizeDuckPositions, 2000);
-
-      // Menu emojis
-      document.querySelector('#scene1').addEventListener('click', () => {
-        document.querySelector('#sky').setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
+      // Menu changement de fond
+      document.querySelector("#scene1").addEventListener("click", () => {
+        document.querySelector("#sky").setAttribute("src", "https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg");
       });
-      document.querySelector('#scene2').addEventListener('click', () => {
-        document.querySelector('#sky').setAttribute('src', 'https://cdn.aframe.io/360-video-boilerplate/video/city.mp4');
+      document.querySelector("#scene2").addEventListener("click", () => {
+        document.querySelector("#sky").setAttribute("src", "https://cdn.aframe.io/360-video-boilerplate/video/city.mp4");
       });
     });
   </script>
