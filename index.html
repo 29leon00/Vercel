@@ -31,23 +31,34 @@
       <!-- Bouton 1 -->
       <a-circle id="scene1" class="clickable"
                 radius="0.15"
-                color="#ECECEC"
+                color="#1b0085"
                 position="-0.3 0 0"
                 material="shader: flat"
                 event-set__enter="_event: mouseenter; color: #DADADA"
                 event-set__leave="_event: mouseleave; color: #ECECEC">
-        <a-text value="🌅" align="center" color="black" position="0 0 0.01" width="2"></a-text>
+        <a-text value="🌄" align="center" color="black" position="0 0 0.01" width="2"></a-text>
       </a-circle>
 
       <!-- Bouton 2 -->
       <a-circle id="scene2" class="clickable"
                 radius="0.15"
-                color="#ECECEC"
+                color="#128500"
                 position="0.3 0 0"
                 material="shader: flat"
                 event-set__enter="_event: mouseenter; color: #DADADA"
                 event-set__leave="_event: mouseleave; color: #ECECEC">
-        <a-text value="🏞️" align="center" color="black" position="0 0 0.01" width="2"></a-text>
+        <a-text value="🏙️" align="center" color="black" position="0 0 0.01" width="2"></a-text>
+      </a-circle>
+
+
+            <a-circle id="scene3" class="clickable"
+                radius="0.15"
+                color="#128500"
+                position="0.3 0 0"
+                material="shader: flat"
+                event-set__enter="_event: mouseenter; color: #DADADA"
+                event-set__leave="_event: mouseleave; color: #ECECEC">
+        <a-text value="🏙️" align="center" color="black" position="0 0 0.01" width="2"></a-text>
       </a-circle>
     </a-entity>
 
@@ -84,6 +95,7 @@
     document.addEventListener('DOMContentLoaded', function () {
       document.querySelector('#scene1').addEventListener('click', () => changeScene(1));
       document.querySelector('#scene2').addEventListener('click', () => changeScene(2));
+      document.querySelector('#scene3').addEventListener('click', () => changeScene(3));
     });
 
     // Changer fond + cube
@@ -93,6 +105,9 @@
 
       if (id === 1) {
         sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
+        box.setAttribute('color', '#A0CED9');
+      } if (id === 3) {
+        sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/city.jpg');
         box.setAttribute('color', '#A0CED9');
       } else {
         sky.setAttribute('src', 'https://cdn.aframe.io/360-video-boilerplate/video/city.mp4');
