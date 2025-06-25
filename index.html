@@ -2,48 +2,57 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>VR avec menu cliquable (tap écran)</title>
+    <title>VR Menu fixe et stylé</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   </head>
   <body style="margin: 0;">
     <a-scene vr-mode-ui="enabled: true">
 
-      <!-- Caméra + curseur (sans fuse) -->
+      <!-- Caméra + curseur + MENU HUD -->
       <a-entity id="cameraRig" camera look-controls position="0 1.6 0">
+        <!-- Curseur -->
         <a-entity id="cursor"
-                  cursor="rayOrigin: entity" raycaster="objects: .clickable"
+                  cursor="rayOrigin: entity" 
+                  raycaster="objects: .clickable"
                   position="0 0 -1"
                   geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
                   material="color: white; shader: flat">
         </a-entity>
+
+        <!-- MENU toujours dans la vue -->
+        <a-entity id="menu" position="0 0 -1.5">
+          <a-plane class="clickable menu-button"
+                   id="scene1"
+                   position="-0.5 0 0"
+                   width="0.5" height="0.25"
+                   color="#ffffff"
+                   material="opacity: 0.7"
+                   geometry="primitive: plane; height: 0.25; width: 0.5"
+                   text="value: Scène 1; align: center; color: black; width: 2;">
+          </a-plane>
+
+          <a-plane class="clickable menu-button"
+                   id="scene2"
+                   position="0.5 0 0"
+                   width="0.5" height="0.25"
+                   color="#ffffff"
+                   material="opacity: 0.7"
+                   geometry="primitive: plane; height: 0.25; width: 0.5"
+                   text="value: Scène 2; align: center; color: black; width: 2;">
+          </a-plane>
+        </a-entity>
       </a-entity>
 
-      <!-- Objet visible -->
+      <!-- Objet dans la scène -->
       <a-box id="box" position="0 1.6 -3" color="#4CC3D9"></a-box>
-
-      <!-- Menu VR cliquable -->
-      <a-entity id="menu" position="0 1.6 -2">
-        <a-plane class="clickable" id="scene1"
-                 position="-0.7 0 0" 
-                 width="0.6" height="0.3" 
-                 color="#FFC65D" 
-                 text="value: Scène 1; align: center">
-        </a-plane>
-        <a-plane class="clickable" id="scene2"
-                 position="0.7 0 0" 
-                 width="0.6" height="0.3" 
-                 color="#7BC8A4" 
-                 text="value: Scène 2; align: center">
-        </a-plane>
-      </a-entity>
 
       <!-- Fond panoramique -->
       <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
     <script>
-      // Activer capteurs sur mobile (iOS)
+      // Autorisation capteur sur iOS
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -59,46 +68,36 @@
         }
       });
 
-      // Lors d'un tap n'importe où
+      // Tap écran = déclencher l'objet visé
       document.addEventListener('click', () => {
         const cursor = document.querySelector('#cursor');
-        const intersection = cursor.components.raycaster.getIntersection(
-          document.querySelector('.clickable')
-        );
-
-        if (intersection && intersection.object.el) {
-          intersection.object.el.emit('click');
+        const intersections = cursor.components.raycaster.intersections;
+        if (intersections.length > 0) {
+          intersections[0].object.el.emit('click');
         }
       });
 
-      // Gérer le clic sur chaque bouton
+      // Gestion des clics sur les boutons
       document.addEventListener('DOMContentLoaded', function () {
-        const scene1 = document.querySelector('#scene1');
-        const scene2 = document.querySelector('#scene2');
-
-        scene1.addEventListener('click', function () {
-          changeScene(1);
-        });
-
-        scene2.addEventListener('click', function () {
-          changeScene(2);
-        });
+        document.querySelector('#scene1').addEventListener('click', () => changeScene(1));
+        document.querySelector('#scene2').addEventListener('click', () => changeScene(2));
       });
 
-      // Changement de scène
+      // Fonction changement de scène
       function changeScene(id) {
         const sky = document.querySelector('#sky');
         const box = document.querySelector('#box');
-
         if (id === 1) {
           sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
           box.setAttribute('color', '#4CC3D9');
         } else if (id === 2) {
-          sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/chesapeake_bay.jpg');
+          sky.setAttribute('src', 'https://raw.githubusercontent.com/aframevr/360-image-gallery/master/images/360.jpg');
           box.setAttribute('color', '#EF2D5E');
         }
       }
     </script>
   </body>
+</html>
+
 </html>
 
