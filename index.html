@@ -2,15 +2,15 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Cardboard VR Corrigé</title>
+    <title>VR Cardboard avec stéréoscopie manuelle</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
       body, html {
         margin: 0;
         padding: 0;
-        background: black;
         overflow: hidden;
+        background: black;
       }
       .eye {
         position: absolute;
@@ -24,44 +24,59 @@
   </head>
   <body>
 
-    <!-- Scène gauche -->
+    <!-- Œil gauche -->
     <a-scene embedded class="eye left" id="sceneL">
-      <a-entity id="camL" camera position="-0.03 1.6 0" rotation="0 0 0"></a-entity>
+      <a-entity id="camL" camera position="-0.03 1.6 0" rotation="0 0 0">
+        <a-entity 
+          cursor="fuse: true; fuseTimeout: 1500" 
+          position="0 0 -1"
+          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+          material="color: white; shader: flat">
+        </a-entity>
+      </a-entity>
+      <a-box position="0 1.6 -3" color="#4CC3D9" event-set__enter="_event: click; color: red"></a-box>
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
-    <!-- Scène droite -->
+    <!-- Œil droit -->
     <a-scene embedded class="eye right" id="sceneR">
-      <a-entity id="camR" camera position="0.03 1.6 0" rotation="0 0 0"></a-entity>
+      <a-entity id="camR" camera position="0.03 1.6 0" rotation="0 0 0">
+        <a-entity 
+          cursor="fuse: true; fuseTimeout: 1500" 
+          position="0 0 -1"
+          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+          material="color: white; shader: flat">
+        </a-entity>
+      </a-entity>
+      <a-box position="0 1.6 -3" color="#4CC3D9" event-set__enter="_event: click; color: red"></a-box>
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
+    <!-- Gestion capteurs et stéréoscopie -->
     <script>
       let initialAlpha = null;
       let lastPitch = 0;
-      let smoothing = 0.2; // plus petit = plus fluide
+      const smoothing = 0.2;
 
       function handleOrientation(event) {
-        const alpha = event.alpha || 0; // Yaw
-        const beta = event.beta || 0;   // Pitch
+        const alpha = event.alpha || 0; // azimuth
+        const beta = event.beta || 0;   // inclination
 
         if (initialAlpha === null) initialAlpha = alpha;
 
-        // Yaw : rotation horizontale
         const yaw = (alpha - initialAlpha + 360) % 360;
-
-        // Pitch : rotation verticale (haut/bas), centrée sur 0
         let pitchRaw = THREE.MathUtils.clamp(beta - 90, -45, 45);
         let pitch = lastPitch * (1 - smoothing) + pitchRaw * smoothing;
         lastPitch = pitch;
 
-        // Appliquer rotation aux deux caméras
-        document.getElementById("camL").setAttribute("rotation", `${pitch} ${yaw - 1} 0`);
-        document.getElementById("camR").setAttribute("rotation", `${pitch} ${yaw + 1} 0`);
-        // ↳ Le -1 / +1 sur yaw crée une légère convergence (œil gauche regarde un peu à droite et vice versa)
+        // Légère convergence des vues
+        const camL = document.getElementById("camL");
+        const camR = document.getElementById("camR");
+        camL.setAttribute("rotation", `${pitch} ${yaw - 1} 0`);
+        camR.setAttribute("rotation", `${pitch} ${yaw + 1} 0`);
       }
 
-      // Permission iOS
+      // Demande permission iOS
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -70,7 +85,7 @@
               if (response === 'granted') {
                 window.addEventListener('deviceorientation', handleOrientation);
               } else {
-                alert('Permission capteurs refusée');
+                alert('Permission capteur refusée');
               }
             })
             .catch(console.error);
