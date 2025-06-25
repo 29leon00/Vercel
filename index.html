@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>VR Cardboard avec rotation de tête</title>
+    <title>VR Cardboard Auto</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   </head>
@@ -25,7 +25,7 @@
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
-    <!-- Demande de permission capteurs (iOS/Android) -->
+    <!-- Permission capteurs -->
     <script>
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
@@ -39,6 +39,15 @@
               }
             })
             .catch(console.error);
+        }
+      });
+    </script>
+
+    <!-- Entrée auto en mode Cardboard si mobile -->
+    <script>
+      AFRAME.scenes[0].addEventListener('loaded', function () {
+        if (AFRAME.utils.device.isMobile()) {
+          document.querySelector('a-scene').enterVR();
         }
       });
     </script>
