@@ -2,84 +2,83 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>VR Cardboard avec rotation de tête + stéréoscopie</title>
+    <title>VR Cardboard avec rotation de tête + stéréoscopie corrigée</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   </head>
   <body style="margin: 0;">
     <a-scene vr-mode-ui="enabled: true" embedded id="scene">
-      <!-- Deux caméras : gauche et droite -->
-      <a-entity id="cameraRig" position="0 0 0">
+      <!-- Caméra gauche (active) avec look-controls -->
+      <a-entity id="cameraLeft" camera look-controls position="-0.03 1.6 0">
         <a-entity 
-          id="cameraLeft" 
-          camera="active: true; eye: left" 
-          look-controls 
-          position="-0.03 1.6 0">
-          <a-entity 
-            cursor="fuse: true; fuseTimeout: 1500" 
-            position="0 0 -1"
-            geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-            material="color: white; shader: flat">
-          </a-entity>
-        </a-entity>
-
-        <a-entity 
-          id="cameraRight" 
-          camera="active: false; eye: right" 
-          look-controls
-          position="0.03 1.6 0">
-          <a-entity 
-            cursor="fuse: true; fuseTimeout: 1500" 
-            position="0 0 -1"
-            geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-            material="color: white; shader: flat">
-          </a-entity>
+          cursor="fuse: true; fuseTimeout: 1500" 
+          position="0 0 -1"
+          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+          material="color: white; shader: flat">
         </a-entity>
       </a-entity>
+
+      <!-- Caméra droite (inactive) -->
+      <a-entity id="cameraRight" camera="active: false" position="0.03 1.6 0"></a-entity>
 
       <!-- Cube interactif -->
       <a-box position="0 1.6 -3" color="#4CC3D9" onclick="alert('clic !')"></a-box>
 
       <!-- Fond panoramique -->
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
+      
+      <!-- Composant pour le rendu split-screen -->
+      <script>
+        AFRAME.registerComponent('stereo-render', {
+          init: function () {
+            const scene = this.el.object3D;
+            const renderer = this.el.renderer;
+            const cameraLeft = document.getElementById('cameraLeft').getObject3D('camera');
+            const cameraRightEnt = document.getElementById('cameraRight');
+            const cameraRight = cameraRightEnt.getObject3D('camera');
+
+            // On synchronise rotation et quaternion de la caméra droite à gauche
+            this.el.sceneEl.addEventListener('render-target-loaded', () => {
+              cameraRight.position.copy(cameraRightEnt.getAttribute('position'));
+            });
+
+            this.el.sceneEl.addEventListener('loaded', () => {
+              cameraRight.position.copy(cameraRightEnt.getAttribute('position'));
+            });
+
+            this.tick = (time, delta) => {
+              // Synchroniser position Y/X/Z droite (attention on ne copie pas la position complète, juste l’orientation)
+              cameraRight.quaternion.copy(cameraLeft.quaternion);
+              cameraRight.position.x = cameraLeft.position.x + 0.06; // décalage IPD 6cm
+
+              // Taille et viewport
+              const width = window.innerWidth;
+              const height = window.innerHeight;
+
+              renderer.clear();
+
+              // Vue gauche
+              renderer.setViewport(0, 0, width / 2, height);
+              renderer.setScissor(0, 0, width / 2, height);
+              renderer.setScissorTest(true);
+              renderer.render(scene, cameraLeft);
+
+              // Vue droite
+              renderer.setViewport(width / 2, 0, width / 2, height);
+              renderer.setScissor(width / 2, 0, width / 2, height);
+              renderer.setScissorTest(true);
+              renderer.render(scene, cameraRight);
+
+              // Dire à A-Frame que le rendu est fait (bloquer le rendu par défaut)
+              return false;
+            };
+          }
+        });
+      </script>
     </a-scene>
 
-    <!-- Script stéréoscopie -->
+    <!-- Demande de permission capteurs (iOS/Android) -->
     <script>
-      const sceneEl = document.querySelector('a-scene');
-      sceneEl.addEventListener('loaded', () => {
-        const renderer = sceneEl.renderer;
-        const cameraLeft = document.getElementById('cameraLeft').getObject3D('camera');
-        const cameraRight = document.getElementById('cameraRight').getObject3D('camera');
-
-        // Taille du viewport
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-
-        function onResize() {
-          sceneEl.renderer.setSize(width, height);
-        }
-        window.addEventListener('resize', onResize);
-
-        // Override render loop pour faire split-screen
-        sceneEl.renderer.setAnimationLoop(() => {
-          renderer.clear();
-
-          // Vue gauche : left half
-          renderer.setViewport(0, 0, width / 2, height);
-          renderer.setScissor(0, 0, width / 2, height);
-          renderer.setScissorTest(true);
-          renderer.render(sceneEl.object3D, cameraLeft);
-
-          // Vue droite : right half
-          renderer.setViewport(width / 2, 0, width / 2, height);
-          renderer.setScissor(width / 2, 0, width / 2, height);
-          renderer.setScissorTest(true);
-          renderer.render(sceneEl.object3D, cameraRight);
-        });
-      });
-
-      // Demande permission capteurs (ton code d'origine)
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -93,6 +92,13 @@
             })
             .catch(console.error);
         }
+      });
+    </script>
+
+    <script>
+      // Activer le composant de rendu stereo après que la scène soit chargée
+      document.querySelector('a-scene').addEventListener('loaded', () => {
+        document.querySelector('a-scene').setAttribute('stereo-render', '');
       });
     </script>
   </body>
