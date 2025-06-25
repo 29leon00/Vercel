@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>VR Cardboard - Menu bas et doux</title>
+  <title>VR Cardboard - Menu emojis arrondi</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
@@ -15,7 +15,7 @@
       <a-entity id="cursor"
                 cursor="rayOrigin: entity" raycaster="objects: .clickable"
                 position="0 0 -1"
-                geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+                geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
                 material="color: white; shader: flat">
       </a-entity>
     </a-entity>
@@ -23,58 +23,51 @@
     <!-- Fond panoramique -->
     <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
 
-    <!-- Cube visuel -->
+    <!-- Objet -->
     <a-box id="box" position="0 1.6 -3" color="#A0CED9"></a-box>
 
-    <!-- Menu stylé en bas et proche -->
-    <a-entity id="menu" position="0 1.2 -1.2">
-      <!-- Bouton Scène 1 -->
-      <a-plane id="scene1" class="clickable"
-               position="-0.5 0 0"
-               width="0.5" height="0.25"
-               color="#E6E6FA"
-               material="shader: flat"
-               geometry="primitive: plane; width: 0.5; height: 0.25"
-               text="value: 🌅 Scène 1; align: center; color: black; width: 2.5"
-               event-set__enter="_event: mouseenter; color: #D8D8F6"
-               event-set__leave="_event: mouseleave; color: #E6E6FA"
-               material="shader: flat; side: double; transparent: false">
-      </a-plane>
+    <!-- Menu emojis petit avec coins arrondis -->
+    <a-entity id="menu" position="0 1.15 -1.2">
+      <!-- Bouton 1 -->
+      <a-circle id="scene1" class="clickable"
+                radius="0.15"
+                color="#ECECEC"
+                position="-0.3 0 0"
+                material="shader: flat"
+                event-set__enter="_event: mouseenter; color: #DADADA"
+                event-set__leave="_event: mouseleave; color: #ECECEC">
+        <a-text value="🌅" align="center" color="black" position="0 0 0.01" width="2"></a-text>
+      </a-circle>
 
-      <!-- Bouton Scène 2 -->
-      <a-plane id="scene2" class="clickable"
-               position="0.5 0 0"
-               width="0.5" height="0.25"
-               color="#D0F0C0"
-               material="shader: flat"
-               geometry="primitive: plane; width: 0.5; height: 0.25"
-               text="value: 🏞️ Scène 2; align: center; color: black; width: 2.5"
-               event-set__enter="_event: mouseenter; color: #C2E6B8"
-               event-set__leave="_event: mouseleave; color: #D0F0C0"
-               material="shader: flat; side: double; transparent: false">
-      </a-plane>
+      <!-- Bouton 2 -->
+      <a-circle id="scene2" class="clickable"
+                radius="0.15"
+                color="#ECECEC"
+                position="0.3 0 0"
+                material="shader: flat"
+                event-set__enter="_event: mouseenter; color: #DADADA"
+                event-set__leave="_event: mouseleave; color: #ECECEC">
+        <a-text value="🏞️" align="center" color="black" position="0 0 0.01" width="2"></a-text>
+      </a-circle>
     </a-entity>
 
   </a-scene>
 
   <script>
-    // Activer capteurs (iOS)
+    // Capteurs iOS
     window.addEventListener('click', function () {
       if (typeof DeviceOrientationEvent !== 'undefined' &&
           typeof DeviceOrientationEvent.requestPermission === 'function') {
         DeviceOrientationEvent.requestPermission()
-          .then(function (response) {
-            if (response === 'granted') {
-              console.log('Orientation activée');
-            } else {
-              alert('Permission capteur refusée');
-            }
+          .then(response => {
+            if (response === 'granted') console.log('Orientation activée');
+            else alert('Permission capteur refusée');
           })
           .catch(console.error);
       }
     });
 
-    // Simuler le clic sur l'objet visé
+    // Clic sur cible
     document.addEventListener('click', () => {
       const cursor = document.querySelector('#cursor');
       const intersections = cursor.components.raycaster.intersections;
@@ -87,13 +80,13 @@
       }
     });
 
-    // Réagir aux clics
+    // Actions menu
     document.addEventListener('DOMContentLoaded', function () {
       document.querySelector('#scene1').addEventListener('click', () => changeScene(1));
       document.querySelector('#scene2').addEventListener('click', () => changeScene(2));
     });
 
-    // Changer la scène
+    // Changer fond + cube
     function changeScene(id) {
       const sky = document.querySelector('#sky');
       const box = document.querySelector('#box');
@@ -101,7 +94,7 @@
       if (id === 1) {
         sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
         box.setAttribute('color', '#A0CED9');
-      } else if (id === 2) {
+      } else {
         sky.setAttribute('src', 'https://raw.githubusercontent.com/aframevr/360-image-gallery/master/images/360.jpg');
         box.setAttribute('color', '#D65F5F');
       }
