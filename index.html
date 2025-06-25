@@ -1,103 +1,113 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>VR Menu fixe et stylé</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  </head>
-  <body style="margin: 0;">
-    <a-scene vr-mode-ui="enabled: true">
+<head>
+  <meta charset="utf-8">
+  <title>VR Cardboard avec menu stylé</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
+</head>
+<body style="margin: 0;">
+  <a-scene vr-mode-ui="enabled: true">
 
-      <!-- Caméra + curseur + MENU HUD -->
-      <a-entity id="cameraRig" camera look-controls position="0 1.6 0">
-        <!-- Curseur -->
-        <a-entity id="cursor"
-                  cursor="rayOrigin: entity" 
-                  raycaster="objects: .clickable"
-                  position="0 0 -1"
-                  geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-                  material="color: white; shader: flat">
-        </a-entity>
-
-        <!-- MENU toujours dans la vue -->
-        <a-entity id="menu" position="0 0 -1.5">
-          <a-plane class="clickable menu-button"
-                   id="scene1"
-                   position="-0.5 0 0"
-                   width="0.5" height="0.25"
-                   color="#ffffff"
-                   material="opacity: 0.7"
-                   geometry="primitive: plane; height: 0.25; width: 0.5"
-                   text="value: Scène 1; align: center; color: black; width: 2;">
-          </a-plane>
-
-          <a-plane class="clickable menu-button"
-                   id="scene2"
-                   position="0.5 0 0"
-                   width="0.5" height="0.25"
-                   color="#ffffff"
-                   material="opacity: 0.7"
-                   geometry="primitive: plane; height: 0.25; width: 0.5"
-                   text="value: Scène 2; align: center; color: black; width: 2;">
-          </a-plane>
-        </a-entity>
+    <!-- Caméra + curseur -->
+    <a-entity id="cameraRig" camera look-controls position="0 1.6 0">
+      <a-entity id="cursor"
+                cursor="rayOrigin: entity" raycaster="objects: .clickable"
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+                material="color: white; shader: flat">
       </a-entity>
+    </a-entity>
 
-      <!-- Objet dans la scène -->
-      <a-box id="box" position="0 1.6 -3" color="#4CC3D9"></a-box>
+    <!-- Fond panoramique -->
+    <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
 
-      <!-- Fond panoramique -->
-      <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
-    </a-scene>
+    <!-- Objet visible (change de couleur selon la scène) -->
+    <a-box id="box" position="0 1.6 -3" color="#4CC3D9"></a-box>
 
-    <script>
-      // Autorisation capteur sur iOS
-      window.addEventListener('click', function () {
-        if (typeof DeviceOrientationEvent !== 'undefined' &&
-            typeof DeviceOrientationEvent.requestPermission === 'function') {
-          DeviceOrientationEvent.requestPermission()
-            .then(function (response) {
-              if (response === 'granted') {
-                console.log('Orientation activée');
-              } else {
-                alert('Permission capteur refusée');
-              }
-            })
-            .catch(console.error);
-        }
-      });
+    <!-- Menu stylé incurvé -->
+    <a-entity id="menu" position="0 1.6 -2">
+      <!-- Bouton Scène 1 -->
+      <a-plane id="scene1" class="clickable"
+               position="-0.8 0 0"
+               width="0.6" height="0.3"
+               color="#FF9F1C"
+               material="shader: flat"
+               geometry="primitive: plane; width: 0.6; height: 0.3"
+               text="value: 🌅 Scène 1; align: center; color: black; width: 2.5"
+               event-set__enter="_event: mouseenter; color: #FFBF69"
+               event-set__leave="_event: mouseleave; color: #FF9F1C">
+      </a-plane>
 
-      // Tap écran = déclencher l'objet visé
-      document.addEventListener('click', () => {
-        const cursor = document.querySelector('#cursor');
-        const intersections = cursor.components.raycaster.intersections;
-        if (intersections.length > 0) {
-          intersections[0].object.el.emit('click');
-        }
-      });
+      <!-- Bouton Scène 2 -->
+      <a-plane id="scene2" class="clickable"
+               position="0.8 0 0"
+               width="0.6" height="0.3"
+               color="#2EC4B6"
+               material="shader: flat"
+               geometry="primitive: plane; width: 0.6; height: 0.3"
+               text="value: 🏞️ Scène 2; align: center; color: black; width: 2.5"
+               event-set__enter="_event: mouseenter; color: #80DED9"
+               event-set__leave="_event: mouseleave; color: #2EC4B6">
+      </a-plane>
+    </a-entity>
 
-      // Gestion des clics sur les boutons
-      document.addEventListener('DOMContentLoaded', function () {
-        document.querySelector('#scene1').addEventListener('click', () => changeScene(1));
-        document.querySelector('#scene2').addEventListener('click', () => changeScene(2));
-      });
+  </a-scene>
 
-      // Fonction changement de scène
-      function changeScene(id) {
-        const sky = document.querySelector('#sky');
-        const box = document.querySelector('#box');
-        if (id === 1) {
-          sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
-          box.setAttribute('color', '#4CC3D9');
-        } else if (id === 2) {
-          sky.setAttribute('src', 'https://raw.githubusercontent.com/aframevr/360-image-gallery/master/images/360.jpg');
-          box.setAttribute('color', '#EF2D5E');
+  <script>
+    // Activer capteurs (iOS)
+    window.addEventListener('click', function () {
+      if (typeof DeviceOrientationEvent !== 'undefined' &&
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+          .then(function (response) {
+            if (response === 'granted') {
+              console.log('Orientation activée');
+            } else {
+              alert('Permission capteur refusée');
+            }
+          })
+          .catch(console.error);
+      }
+    });
+
+    // Détecter où pointe le curseur lors d’un clic écran
+    document.addEventListener('click', () => {
+      const cursor = document.querySelector('#cursor');
+      const intersections = cursor.components.raycaster.intersections;
+
+      if (intersections.length > 0) {
+        const target = intersections[0].object.el;
+        if (target && target.classList.contains('clickable')) {
+          target.emit('click');
         }
       }
-    </script>
-  </body>
-</html>
+    });
 
+    // Actions quand un bouton est cliqué
+    document.addEventListener('DOMContentLoaded', function () {
+      const scene1 = document.querySelector('#scene1');
+      const scene2 = document.querySelector('#scene2');
+
+      scene1.addEventListener('click', () => changeScene(1));
+      scene2.addEventListener('click', () => changeScene(2));
+    });
+
+    // Changement de scène
+    function changeScene(id) {
+      const sky = document.querySelector('#sky');
+      const box = document.querySelector('#box');
+
+      if (id === 1) {
+        sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
+        box.setAttribute('color', '#4CC3D9');
+      } else if (id === 2) {
+        sky.setAttribute('src', 'https://raw.githubusercontent.com/aframevr/360-image-gallery/master/images/360.jpg');
+        box.setAttribute('color', '#EF2D5E');
+      }
+    }
+  </script>
+</body>
 </html>
 
