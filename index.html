@@ -2,35 +2,27 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>VR Cardboard avec rotation de tête + stéréoscopie</title>
+    <title>VR Cardboard simple</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   </head>
   <body style="margin: 0;">
-    <a-scene vr-mode-ui="enabled: true" embedded>
-      <!-- Caméra avec look-controls et stéréoscopie activée automatiquement en mode VR -->
-      <a-entity id="cameraRig" position="0 1.6 0">
-        <a-camera
-          look-controls
-          wasd-controls-enabled="false"
-          position="0 0 0"
-          cursor="fuse: true; fuseTimeout: 1500"
-          raycaster="objects: .clickable"
-        >
-          <a-entity
-            cursor="fuse: true; fuseTimeout: 1500"
-            position="0 0 -1"
-            geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-            material="color: white; shader: flat"
-          ></a-entity>
-        </a-camera>
-      </a-entity>
+    <a-scene vr-mode-ui="enabled: true">
+      <!-- Caméra simple avec look-controls -->
+      <a-camera position="0 1.6 0" look-controls>
+        <a-cursor
+          fuse="true"
+          fuse-timeout="1500"
+          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+          material="color: white; shader: flat"
+        ></a-cursor>
+      </a-camera>
 
-      <!-- Cube interactif -->
+      <!-- Cube -->
       <a-box
-        class="clickable"
         position="0 1.6 -3"
         color="#4CC3D9"
+        class="clickable"
         onclick="alert('clic !')"
       ></a-box>
 
@@ -38,17 +30,17 @@
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
-    <!-- Demande de permission capteurs (iOS/Android) -->
     <script>
-      window.addEventListener("click", function () {
+      // Pour iOS 13+ : demande d'autorisation capteur d'orientation
+      window.addEventListener("click", () => {
         if (
           typeof DeviceOrientationEvent !== "undefined" &&
           typeof DeviceOrientationEvent.requestPermission === "function"
         ) {
           DeviceOrientationEvent.requestPermission()
-            .then(function (response) {
+            .then((response) => {
               if (response === "granted") {
-                console.log("Orientation activée");
+                console.log("Permission capteur activée");
               } else {
                 alert("Permission capteur refusée");
               }
@@ -59,4 +51,3 @@
     </script>
   </body>
 </html>
-
