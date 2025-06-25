@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Cardboard DIY Stéréo Fix</title>
+    <title>Cardboard VR Corrigé</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
@@ -24,11 +24,13 @@
   </head>
   <body>
 
+    <!-- Scène gauche -->
     <a-scene embedded class="eye left" id="sceneL">
       <a-entity id="camL" camera position="-0.03 1.6 0" rotation="0 0 0"></a-entity>
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
+    <!-- Scène droite -->
     <a-scene embedded class="eye right" id="sceneR">
       <a-entity id="camR" camera position="0.03 1.6 0" rotation="0 0 0"></a-entity>
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
@@ -36,26 +38,30 @@
 
     <script>
       let initialAlpha = null;
+      let lastPitch = 0;
+      let smoothing = 0.2; // plus petit = plus fluide
 
       function handleOrientation(event) {
-        const alpha = event.alpha || 0; // Azimuth (compas)
-        const beta = event.beta || 0;   // Inclinaison avant/arrière
-        const gamma = event.gamma || 0; // Inclinaison gauche/droite
+        const alpha = event.alpha || 0; // Yaw
+        const beta = event.beta || 0;   // Pitch
 
         if (initialAlpha === null) initialAlpha = alpha;
 
-        // Rotation horizontale uniquement (regard gauche/droite)
+        // Yaw : rotation horizontale
         const yaw = (alpha - initialAlpha + 360) % 360;
 
-        // Optionnel : mouvement haut/bas (pitch)
-        const pitch = THREE.MathUtils.clamp(beta - 90, -45, 45);
+        // Pitch : rotation verticale (haut/bas), centrée sur 0
+        let pitchRaw = THREE.MathUtils.clamp(beta - 90, -45, 45);
+        let pitch = lastPitch * (1 - smoothing) + pitchRaw * smoothing;
+        lastPitch = pitch;
 
-        // Appliquer aux deux caméras
-        document.getElementById("camL").setAttribute("rotation", `${pitch} ${yaw} 0`);
-        document.getElementById("camR").setAttribute("rotation", `${pitch} ${yaw} 0`);
+        // Appliquer rotation aux deux caméras
+        document.getElementById("camL").setAttribute("rotation", `${pitch} ${yaw - 1} 0`);
+        document.getElementById("camR").setAttribute("rotation", `${pitch} ${yaw + 1} 0`);
+        // ↳ Le -1 / +1 sur yaw crée une légère convergence (œil gauche regarde un peu à droite et vice versa)
       }
 
-      // Permission (iOS)
+      // Permission iOS
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -64,7 +70,7 @@
               if (response === 'granted') {
                 window.addEventListener('deviceorientation', handleOrientation);
               } else {
-                alert('Permission refusée');
+                alert('Permission capteurs refusée');
               }
             })
             .catch(console.error);
