@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>VR Cardboard stéréo sans gyroscope</title>
+    <title>VR Cardboard sans gyroscope</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
@@ -12,51 +12,44 @@
         overflow: hidden;
         background: black;
       }
-      .eye {
-        position: absolute;
-        top: 0;
-        width: 50vw;
-        height: 100vh;
+      canvas {
+        image-rendering: auto !important;
       }
-      .left { left: 0; }
-      .right { right: 0; }
     </style>
   </head>
   <body>
-
-    <!-- Scène pour œil gauche -->
-    <a-scene embedded class="eye left" id="sceneL">
-      <a-entity id="camL" camera position="-0.03 1.6 0">
-        <a-entity 
-          cursor="fuse: true; fuseTimeout: 1500" 
-          position="0 0 -1"
-          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-          material="color: white; shader: flat">
+    <a-scene id="scene" embedded vr-mode-ui="enabled: false">
+      <a-entity id="rig" position="0 1.6 0">
+        <!-- Œil gauche -->
+        <a-entity id="eyeL" camera="active: true" position="-0.03 0 0">
+          <a-entity cursor="fuse: true; fuseTimeout: 1500" position="0 0 -1"
+            geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+            material="color: white; shader: flat">
+          </a-entity>
         </a-entity>
+        <!-- Œil droit -->
+        <a-entity id="eyeR" camera position="0.03 0 0" visible="false"></a-entity>
       </a-entity>
+
       <a-box position="0 1.6 -3" color="#4CC3D9"></a-box>
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
-    <!-- Scène pour œil droit -->
-    <a-scene embedded class="eye right" id="sceneR">
-      <a-entity id="camR" camera position="0.03 1.6 0">
-        <a-entity 
-          cursor="fuse: true; fuseTimeout: 1500" 
-          position="0 0 -1"
-          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-          material="color: white; shader: flat">
-        </a-entity>
-      </a-entity>
-      <a-box position="0 1.6 -3" color="#4CC3D9"></a-box>
-      <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
-    </a-scene>
-
-    <!-- Capteurs -->
     <script>
+      // Stéréoscopie manuelle (un canvas partagé, deux caméras décalées)
+      let toggle = true;
+      function stereoLoop() {
+        document.getElementById("eyeL").setAttribute("camera", "active", toggle);
+        document.getElementById("eyeR").setAttribute("camera", "active", !toggle);
+        toggle = !toggle;
+        requestAnimationFrame(stereoLoop);
+      }
+      requestAnimationFrame(stereoLoop);
+
+      // Gestion de la rotation de tête
       let initialAlpha = null;
       let lastPitch = 0;
-      const smoothing = 0.1;
+      const smoothing = 0.15;
 
       function handleOrientation(event) {
         const alpha = event.alpha || 0;
@@ -69,104 +62,11 @@
         const pitch = lastPitch * (1 - smoothing) + rawPitch * smoothing;
         lastPitch = pitch;
 
-        document.getElementById("camL").setAttribute("rotation", `${pitch} ${yaw - 1.5} 0`);
-        document.getElementById("camR").setAttribute("rotation", `${pitch} ${yaw + 1.5} 0`);
+        const rig = document.getElementById("rig");
+        rig.setAttribute("rotation", `${pitch} ${yaw} 0`);
       }
 
-      window.addEventListener('click', function () {
-        if (typeof DeviceOrientationEvent !== 'undefined' &&
-            typeof DeviceOrientationEvent.requestPermission === 'function') {
-          DeviceOrientationEvent.requestPermission()
-            .then(function (response) {
-              if (response === 'granted') {
-                window.addEventListener('deviceorientation', handleOrientation);
-              } else {
-                alert('Permission capteur refusée');
-              }
-            })
-            .catch(console.error);
-        } else {
-          window.addEventListener('deviceorientation', handleOrientation);
-        }
-      });
-    </script>
-  </body>
-</html>
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>VR Cardboard stéréo sans gyroscope</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background: black;
-      }
-      .eye {
-        position: absolute;
-        top: 0;
-        width: 50vw;
-        height: 100vh;
-      }
-      .left { left: 0; }
-      .right { right: 0; }
-    </style>
-  </head>
-  <body>
-
-    <!-- Scène pour œil gauche -->
-    <a-scene embedded class="eye left" id="sceneL">
-      <a-entity id="camL" camera position="-0.03 1.6 0">
-        <a-entity 
-          cursor="fuse: true; fuseTimeout: 1500" 
-          position="0 0 -1"
-          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-          material="color: white; shader: flat">
-        </a-entity>
-      </a-entity>
-      <a-box position="0 1.6 -3" color="#4CC3D9"></a-box>
-      <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
-    </a-scene>
-
-    <!-- Scène pour œil droit -->
-    <a-scene embedded class="eye right" id="sceneR">
-      <a-entity id="camR" camera position="0.03 1.6 0">
-        <a-entity 
-          cursor="fuse: true; fuseTimeout: 1500" 
-          position="0 0 -1"
-          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-          material="color: white; shader: flat">
-        </a-entity>
-      </a-entity>
-      <a-box position="0 1.6 -3" color="#4CC3D9"></a-box>
-      <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
-    </a-scene>
-
-    <!-- Capteurs -->
-    <script>
-      let initialAlpha = null;
-      let lastPitch = 0;
-      const smoothing = 0.1;
-
-      function handleOrientation(event) {
-        const alpha = event.alpha || 0;
-        const beta = event.beta || 0;
-
-        if (initialAlpha === null) initialAlpha = alpha;
-
-        const yaw = (alpha - initialAlpha + 360) % 360;
-        const rawPitch = THREE.MathUtils.clamp(beta - 90, -60, 60);
-        const pitch = lastPitch * (1 - smoothing) + rawPitch * smoothing;
-        lastPitch = pitch;
-
-        document.getElementById("camL").setAttribute("rotation", `${pitch} ${yaw - 1.5} 0`);
-        document.getElementById("camR").setAttribute("rotation", `${pitch} ${yaw + 1.5} 0`);
-      }
-
+      // Autoriser l'accès aux capteurs
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
