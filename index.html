@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Jeu VR - Canards & Pistolet</title>
+  <title>Jeu VR - Tire sur les canards 🦆</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
@@ -10,133 +10,88 @@
 <body style="margin: 0;">
   <a-scene vr-mode-ui="enabled: true">
 
-    <!-- Caméra + curseur + pistolet -->
-    <a-entity id="cameraRig" position="0 1.6 0">
-      <a-entity id="camera" camera look-controls wasd-controls></a-entity>
-
-      <!-- Pistolet dans la main droite -->
-      <a-entity id="gun" position="0.3 -0.3 -0.5" rotation="0 0 0">
-        <a-box depth="0.3" height="0.1" width="0.1" color="#222"></a-box>
+    <!-- Caméra + curseur -->
+    <a-entity id="cameraRig" camera look-controls position="0 1.6 0">
+      <a-entity id="cursor"
+                cursor="rayOrigin: entity" raycaster="objects: .clickable"
+                position="0 0 -1"
+                geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
+                material="color: white; shader: flat">
       </a-entity>
     </a-entity>
 
     <!-- Fond panoramique -->
     <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
 
-    <!-- Score -->
+    <!-- Score affiché -->
     <a-text id="scoreText" value="Score: 0" position="-0.6 2 -1" color="white" width="3"></a-text>
 
-    <!-- Menu emojis -->
-    <a-entity id="menu" position="0 1.15 -1.2">
-      <a-circle id="scene1" class="clickable"
-                radius="0.15"
-                color="#1b0085"
-                position="-0.3 0 0"
-                material="shader: flat"
-                event-set__enter="_event: mouseenter; color: #DADADA"
-                event-set__leave="_event: mouseleave; color: #ECECEC">
-        <a-text value="🌄" align="center" color="black" position="0 0 0.01" width="2"></a-text>
-      </a-circle>
+    <!-- Container des canards -->
+    <a-entity id="duckContainer"></a-entity>
 
-      <a-circle id="scene2" class="clickable"
-                radius="0.15"
-                color="#128500"
-                position="0.3 0 0"
-                material="shader: flat"
-                event-set__enter="_event: mouseenter; color: #DADADA"
-                event-set__leave="_event: mouseleave; color: #ECECEC">
-        <a-text value="🏙️" align="center" color="black" position="0 0 0.01" width="2"></a-text>
-      </a-circle>
-    </a-entity>
+    <!-- Menu emojis arrondi -->
+
 
   </a-scene>
 
   <script>
     let score = 0;
-    let duckCount = 3;
+    let duckIdCounter = 0;
+    let ducks = [];
 
-    // Fonction de tir
-    document.addEventListener('click', shoot);
-
-    function shoot() {
-      const scene = document.querySelector('a-scene');
-      const camera = document.querySelector('#camera');
-      const position = new THREE.Vector3();
-      const direction = new THREE.Vector3();
-      camera.object3D.getWorldPosition(position);
-      camera.object3D.getWorldDirection(direction);
-
-      // Créer projectile
-      const bullet = document.createElement('a-sphere');
-      bullet.setAttribute('radius', '0.03');
-      bullet.setAttribute('color', 'red');
-      bullet.setAttribute('position', `${position.x} ${position.y} ${position.z}`);
-      bullet.setAttribute('velocity', `${direction.x * 10} ${direction.y * 10} ${direction.z * 10}`);
-      bullet.setAttribute('dynamic-body', '');
-      bullet.setAttribute('class', 'projectile');
-
-      scene.appendChild(bullet);
-
-      // Supprimer après 3 sec
-      setTimeout(() => {
-        if (bullet.parentNode) bullet.parentNode.removeChild(bullet);
-      }, 3000);
+    function updateScore() {
+      document.querySelector('#scoreText').setAttribute('value', `Score: ${score}`);
     }
 
-    // Génération des canards
-    function spawnDucks() {
-      const scene = document.querySelector('a-scene');
-      duckCount = 3;
+    function createDuck(x, y, z) {
+      const duck = document.createElement('a-entity');
+      duck.setAttribute('id', `duck${duckIdCounter++}`);
+      duck.setAttribute('class', 'clickable duck');
+      duck.setAttribute('gltf-model', 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/Duck/glTF/Duck.gltf');
+      duck.setAttribute('position', `${x} ${y} ${z}`);
+      duck.setAttribute('scale', '0.3 0.3 0.3');
+      duck.setAttribute('animation-mixer', '');
+      document.querySelector('#duckContainer').appendChild(duck);
 
-      for (let i = 1; i <= duckCount; i++) {
-        const duck = document.createElement('a-entity');
-        duck.setAttribute('id', `duck${i}`);
-        duck.setAttribute('class', 'duck');
-        duck.setAttribute('gltf-model', 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/Duck/glTF/Duck.gltf');
-        duck.setAttribute('scale', '0.3 0.3 0.3');
-        duck.setAttribute('animation-mixer', '');
+      // Animation permanente de déplacement en aller-retour
+      const dx = (Math.random() - 0.5) * 4;
+      const dz = (Math.random() - 0.5) * 4;
+      duck.setAttribute('animation__x', {
+        property: 'position',
+        dir: 'alternate',
+        dur: 4000 + Math.random() * 2000,
+        easing: 'linear',
+        loop: true,
+        to: `${x + dx} ${y} ${z + dz}`
+      });
+
+      duck.addEventListener('click', () => {
+        duck.remove();
+        ducks = ducks.filter(d => d !== duck);
+        score++;
+        updateScore();
+        if (ducks.length === 0) {
+          setTimeout(spawnDucks, 1000);
+        }
+      });
+
+      ducks.push(duck);
+    }
+
+    function spawnDucks() {
+      const num = Math.floor(Math.random() * 4) + 2; // entre 2 et 5
+      for (let i = 0; i < num; i++) {
         const x = (Math.random() - 0.5) * 4;
         const y = 1 + Math.random() * 0.5;
         const z = -2 - Math.random() * 3;
-        duck.setAttribute('position', `${x} ${y} ${z}`);
-        scene.appendChild(duck);
+        createDuck(x, y, z);
       }
     }
 
-    // Collision entre projectiles et canards
-    function checkHits() {
-      const bullets = document.querySelectorAll('.projectile');
-      const ducks = document.querySelectorAll('.duck');
+    document.addEventListener('DOMContentLoaded', () => {
+      updateScore();
+      spawnDucks();
 
-      bullets.forEach(bullet => {
-        const bulletPos = bullet.object3D.position;
-
-        ducks.forEach(duck => {
-          const duckPos = duck.object3D.position;
-          const distance = bulletPos.distanceTo(duckPos);
-
-          if (distance < 0.3) {
-            // Touche !
-            if (duck.parentNode) duck.parentNode.removeChild(duck);
-            if (bullet.parentNode) bullet.parentNode.removeChild(bullet);
-
-            score++;
-            duckCount--;
-            document.querySelector('#scoreText').setAttribute('value', `Score: ${score}`);
-
-            if (duckCount <= 0) {
-              setTimeout(spawnDucks, 1000); // nouvelle vague
-            }
-          }
-        });
-      });
-    }
-
-    // Boucle de détection
-    setInterval(checkHits, 100);
-
-    // Menu emojis
-    document.addEventListener("DOMContentLoaded", () => {
       document.querySelector('#scene1').addEventListener('click', () => {
         document.querySelector('#sky').setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
       });
@@ -144,9 +99,18 @@
       document.querySelector('#scene2').addEventListener('click', () => {
         document.querySelector('#sky').setAttribute('src', 'https://cdn.aframe.io/360-video-boilerplate/video/city.mp4');
       });
+    });
 
-      // Générer les premiers canards
-      spawnDucks();
+    // Capteurs iOS
+    window.addEventListener('click', function () {
+      if (typeof DeviceOrientationEvent !== 'undefined' &&
+          typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+          .then(response => {
+            if (response !== 'granted') alert('Permission capteur refusée');
+          })
+          .catch(console.error);
+      }
     });
   </script>
 </body>
