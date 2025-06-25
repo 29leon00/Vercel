@@ -2,85 +2,43 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>VR Cardboard sans gyroscope</title>
+    <title>VR Cardboard avec rotation de tête</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <style>
-      html, body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background: black;
-      }
-      canvas {
-        image-rendering: auto !important;
-      }
-    </style>
   </head>
-  <body>
-    <a-scene id="scene" embedded vr-mode-ui="enabled: false">
-      <a-entity id="rig" position="0 1.6 0">
-        <!-- Œil gauche -->
-        <a-entity id="eyeL" camera="active: true" position="-0.03 0 0">
-          <a-entity cursor="fuse: true; fuseTimeout: 1500" position="0 0 -1"
-            geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-            material="color: white; shader: flat">
-          </a-entity>
+  <body style="margin: 0;">
+    <a-scene vr-mode-ui="enabled: true">
+      <!-- Caméra avec look-controls activé -->
+      <a-entity camera look-controls position="0 1.6 0">
+        <a-entity 
+          cursor="fuse: true; fuseTimeout: 1500" 
+          position="0 0 -1"
+          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+          material="color: white; shader: flat">
         </a-entity>
-        <!-- Œil droit -->
-        <a-entity id="eyeR" camera position="0.03 0 0" visible="false"></a-entity>
       </a-entity>
 
-      <a-box position="0 1.6 -3" color="#4CC3D9"></a-box>
+      <!-- Cube interactif -->
+      <a-box position="0 1.6 -3" color="#4CC3D9" onclick="alert('clic !')"></a-box>
+
+      <!-- Fond panoramique -->
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
+    <!-- Demande de permission capteurs (iOS/Android) -->
     <script>
-      // Stéréoscopie manuelle (un canvas partagé, deux caméras décalées)
-      let toggle = true;
-      function stereoLoop() {
-        document.getElementById("eyeL").setAttribute("camera", "active", toggle);
-        document.getElementById("eyeR").setAttribute("camera", "active", !toggle);
-        toggle = !toggle;
-        requestAnimationFrame(stereoLoop);
-      }
-      requestAnimationFrame(stereoLoop);
-
-      // Gestion de la rotation de tête
-      let initialAlpha = null;
-      let lastPitch = 0;
-      const smoothing = 0.15;
-
-      function handleOrientation(event) {
-        const alpha = event.alpha || 0;
-        const beta = event.beta || 0;
-
-        if (initialAlpha === null) initialAlpha = alpha;
-
-        const yaw = (alpha - initialAlpha + 360) % 360;
-        const rawPitch = THREE.MathUtils.clamp(beta - 90, -60, 60);
-        const pitch = lastPitch * (1 - smoothing) + rawPitch * smoothing;
-        lastPitch = pitch;
-
-        const rig = document.getElementById("rig");
-        rig.setAttribute("rotation", `${pitch} ${yaw} 0`);
-      }
-
-      // Autoriser l'accès aux capteurs
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
           DeviceOrientationEvent.requestPermission()
             .then(function (response) {
               if (response === 'granted') {
-                window.addEventListener('deviceorientation', handleOrientation);
+                console.log('Orientation activée');
               } else {
                 alert('Permission capteur refusée');
               }
             })
             .catch(console.error);
-        } else {
-          window.addEventListener('deviceorientation', handleOrientation);
         }
       });
     </script>
