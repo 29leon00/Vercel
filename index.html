@@ -23,8 +23,6 @@
     <!-- Fond panoramique -->
     <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
 
-    <!-- Objet -->
-<a-entity id="box" gltf-model="https://cdn.aframe.io/test-models/animated/animated.gltf" position="0 1.6 -3"></a-entity>
 
     <!-- Menu emojis petit avec coins arrondis -->
     <a-entity id="menu" position="0 1.15 -1.2">
@@ -51,15 +49,6 @@
       </a-circle>
 
 
-            <a-circle id="scene3" class="clickable"
-                radius="0.15"
-                color="#128500"
-                position="0.3 0 0"
-                material="shader: flat"
-                event-set__enter="_event: mouseenter; color: #DADADA"
-                event-set__leave="_event: mouseleave; color: #ECECEC">
-        <a-text value="🏙️" align="center" color="black" position="0 0 0.01" width="2"></a-text>
-      </a-circle>
     </a-entity>
 
   </a-scene>
@@ -95,7 +84,6 @@
     document.addEventListener('DOMContentLoaded', function () {
       document.querySelector('#scene1').addEventListener('click', () => changeScene(1));
       document.querySelector('#scene2').addEventListener('click', () => changeScene(2));
-      document.querySelector('#scene3').addEventListener('click', () => changeScene(3));
     });
 
     // Changer fond + cube
@@ -105,9 +93,6 @@
 
       if (id === 1) {
         sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
-        box.setAttribute('color', '#A0CED9');
-      } if (id === 3) {
-        sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/city.jpg');
         box.setAttribute('color', '#A0CED9');
       } else {
         sky.setAttribute('src', 'https://cdn.aframe.io/360-video-boilerplate/video/city.mp4');
