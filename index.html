@@ -1,140 +1,275 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Stéréoscopie sans gyro - Split screen</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <style>
-      body, html {
-        margin: 0; padding: 0; overflow: hidden; height: 100%;
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>VR Cardboard stéréoscopie sans gyro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <style>
+    body, html {
+      margin: 0; padding: 0; overflow: hidden; height: 100%;
+      background: black;
+      color: white;
+      font-family: sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #leftEye, #rightEye {
+      position: fixed;
+      top: 0; 
+      width: 50vw; 
+      height: 100vh; 
+      overflow: hidden;
+      touch-action: none;
+    }
+    #leftEye { left: 0; }
+    #rightEye { right: 0; }
+    #controls {
+      position: fixed; 
+      bottom: 10px; 
+      left: 50%; 
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.5);
+      padding: 10px 15px;
+      border-radius: 8px;
+      z-index: 10;
+      display: flex; 
+      align-items: center;
+      gap: 10px;
+    }
+    #controls label {
+      user-select: none;
+    }
+    #message {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 14px;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Deux canvas pour split-screen -->
+  <canvas id="leftEye"></canvas>
+  <canvas id="rightEye"></canvas>
+
+  <!-- Slider pour rotation manuelle -->
+  <div id="controls">
+    <label for="yaw">Tourner : </label>
+    <input type="range" id="yaw" min="-180" max="180" value="0" step="1" />
+  </div>
+
+  <div id="message">Cliquez pour autoriser les capteurs (si demandé)</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.153.0/examples/js/controls/DeviceOrientationControls.js"></script>
+
+  <script>
+    // Setup THREE.js scène A-Frame-like minimal
+    // On va créer une scène simple avec un cube et un skybox
+    const scene = new THREE.Scene();
+
+    // Cube
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshStandardMaterial({ color: 0x4cc3d9 });
+    const cube = new THREE.Mesh(geometry, material);
+    cube.position.set(0, 1.6, -3);
+    scene.add(cube);
+
+    // Lumière
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(0, 10, 5);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    // Skybox panoramique (utilisation d'une sphère inversée)
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(
+      'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg',
+      (texture) => {
+        const sphereGeo = new THREE.SphereGeometry(500, 60, 40);
+        sphereGeo.scale(-1, 1, 1); // Inverser faces
+        const sphereMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide });
+        const sky = new THREE.Mesh(sphereGeo, sphereMat);
+        scene.add(sky);
       }
-      #leftEye, #rightEye {
-        position: fixed;
-        top: 0; 
-        width: 50vw; 
-        height: 100vh; 
-        overflow: hidden;
-      }
-      #leftEye { left: 0; }
-      #rightEye { right: 0; }
-      #controls {
-        position: fixed; 
-        bottom: 10px; 
-        left: 50%; 
-        transform: translateX(-50%);
-        background: rgba(0,0,0,0.5);
-        padding: 10px;
-        border-radius: 8px;
-        color: white;
-        font-family: sans-serif;
-        z-index: 10;
-      }
-    </style>
-  </head>
-  <body>
-    <!-- Deux scènes A-Frame avec caméras distinctes pour chaque oeil -->
-    <a-scene
-      embedded
-      style="width: 100vw; height: 100vh; pointer-events: none;"
-      id="scene"
-    >
-      <!-- Cube dans la scène principale -->
-      <a-box position="0 1.6 -3" color="#4CC3D9"></a-box>
-      <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
-    </a-scene>
+    );
 
-    <!-- Deux canvas avec rendu séparé pour chaque œil -->
-    <canvas id="leftEye"></canvas>
-    <canvas id="rightEye"></canvas>
+    // Canvas & renderers setup
+    const leftCanvas = document.getElementById('leftEye');
+    const rightCanvas = document.getElementById('rightEye');
 
-    <div id="controls">
-      <label for="yaw">Tourner : </label>
-      <input
-        type="range"
-        id="yaw"
-        min="-180"
-        max="180"
-        value="0"
-        step="1"
-      />
-    </div>
-
-    <script>
-      // Init A-Frame renderers, caméras, etc pour split screen
-
-      const sceneEl = document.querySelector('a-scene');
-      const renderer = sceneEl.renderer;
-      const scene = sceneEl.object3D;
-
-      // Création de deux caméras pour split screen
-      const cameraLeft = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
-      const cameraRight = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
-
-      // Position initiale des caméras, séparées pour l'effet 3D (interoculaire ~0.06m)
-      const eyeSeparation = 0.06;
-      cameraLeft.position.set(-eyeSeparation / 2, 1.6, 0);
-      cameraRight.position.set(eyeSeparation / 2, 1.6, 0);
-
-      // Récupérer les canvas
-      const leftCanvas = document.getElementById('leftEye');
-      const rightCanvas = document.getElementById('rightEye');
-
-      // Configurer les canvas
+    function resizeCanvases() {
       leftCanvas.width = window.innerWidth / 2;
       leftCanvas.height = window.innerHeight;
       rightCanvas.width = window.innerWidth / 2;
       rightCanvas.height = window.innerHeight;
 
-      // Définir les contextes WebGL
-      const leftContext = leftCanvas.getContext('webgl2') || leftCanvas.getContext('webgl');
-      const rightContext = rightCanvas.getContext('webgl2') || rightCanvas.getContext('webgl');
-
-      // Créer deux renderers WebGL
-      const leftRenderer = new THREE.WebGLRenderer({ canvas: leftCanvas, context: leftContext });
-      const rightRenderer = new THREE.WebGLRenderer({ canvas: rightCanvas, context: rightContext });
-
       leftRenderer.setSize(leftCanvas.width, leftCanvas.height);
       rightRenderer.setSize(rightCanvas.width, rightCanvas.height);
 
-      // Angle de rotation manuel (yaw)
-      let yaw = 0;
+      cameraLeft.aspect = leftCanvas.width / leftCanvas.height;
+      cameraLeft.updateProjectionMatrix();
 
-      // Gérer slider pour tourner la vue
-      document.getElementById('yaw').addEventListener('input', (e) => {
-        yaw = THREE.MathUtils.degToRad(e.target.value);
-      });
+      cameraRight.aspect = rightCanvas.width / rightCanvas.height;
+      cameraRight.updateProjectionMatrix();
+    }
 
-      function animate() {
-        requestAnimationFrame(animate);
+    // Caméras pour les yeux
+    const eyeSeparation = 0.06;
+    const cameraLeft = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
+    cameraLeft.position.set(-eyeSeparation / 2, 1.6, 0);
+    const cameraRight = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
+    cameraRight.position.set(eyeSeparation / 2, 1.6, 0);
 
-        // Appliquer rotation yaw aux deux caméras
+    // Renderers WebGL
+    const leftRenderer = new THREE.WebGLRenderer({ canvas: leftCanvas, antialias: true });
+    const rightRenderer = new THREE.WebGLRenderer({ canvas: rightCanvas, antialias: true });
+    resizeCanvases();
+
+    // Rotation yaw manuelle en radians
+    let yaw = 0;
+
+    // Slider gestion
+    const slider = document.getElementById('yaw');
+    slider.addEventListener('input', e => {
+      yaw = THREE.MathUtils.degToRad(e.target.value);
+    });
+
+    // Controle orientation par capteurs (DeviceOrientationControls)
+    let deviceControls = null;
+    let deviceControlsEnabled = false;
+    let message = document.getElementById('message');
+
+    function enableDeviceOrientation() {
+      if (deviceControls) return; // déjà activé
+
+      deviceControls = new THREE.DeviceOrientationControls(cameraLeft, true);
+      // On lie la même orientation à la droite en copiant rotation
+      deviceControls.connect();
+      deviceControlsEnabled = true;
+      message.textContent = "Contrôle par capteurs activé (sans gyro)";
+    }
+
+    function disableDeviceOrientation() {
+      if (deviceControls) {
+        deviceControls.disconnect();
+        deviceControls = null;
+      }
+      deviceControlsEnabled = false;
+      message.textContent = "Contrôle manuel activé";
+    }
+
+    // Tenter d'activer capteurs à la demande (iOS / Chrome)
+    function requestDeviceOrientationPermission() {
+      if (
+        typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function'
+      ) {
+        DeviceOrientationEvent.requestPermission()
+          .then(response => {
+            if (response === 'granted') {
+              enableDeviceOrientation();
+            } else {
+              disableDeviceOrientation();
+              alert('Permission capteur refusée');
+            }
+          })
+          .catch(() => {
+            disableDeviceOrientation();
+          });
+      } else {
+        // Pas besoin de permission dans Chrome Android (ou desktop)
+        enableDeviceOrientation();
+      }
+    }
+
+    // Contrôle tactile manuel si pas de capteurs ou gyro refusé
+    let isDragging = false;
+    let previousX = 0;
+
+    function onTouchStart(e) {
+      isDragging = true;
+      previousX = e.touches ? e.touches[0].clientX : e.clientX;
+    }
+
+    function onTouchMove(e) {
+      if (!isDragging) return;
+      let currentX = e.touches ? e.touches[0].clientX : e.clientX;
+      let deltaX = currentX - previousX;
+      previousX = currentX;
+
+      const sensitivity = 0.005;
+      yaw += deltaX * sensitivity;
+
+      // Maj slider visuel
+      slider.value = THREE.MathUtils.radToDeg(yaw);
+    }
+
+    function onTouchEnd(e) {
+      isDragging = false;
+    }
+
+    [leftCanvas, rightCanvas].forEach(canvas => {
+      canvas.addEventListener('touchstart', onTouchStart, false);
+      canvas.addEventListener('touchmove', onTouchMove, false);
+      canvas.addEventListener('touchend', onTouchEnd, false);
+
+      canvas.addEventListener('mousedown', onTouchStart, false);
+      canvas.addEventListener('mousemove', onTouchMove, false);
+      canvas.addEventListener('mouseup', onTouchEnd, false);
+    });
+
+    // Positionner la caméra droite à partir de la gauche (copie rotation)
+    function syncRightCamera() {
+      cameraRight.position.copy(cameraLeft.position);
+      cameraRight.position.x += eyeSeparation;
+      cameraRight.rotation.copy(cameraLeft.rotation);
+      cameraRight.quaternion.copy(cameraLeft.quaternion);
+    }
+
+    // Boucle animation
+    function animate() {
+      requestAnimationFrame(animate);
+
+      if (deviceControlsEnabled && deviceControls) {
+        deviceControls.update();
+        // Copier orientation caméra gauche vers droite
+        syncRightCamera();
+      } else {
+        // Rotation manuelle
+        cameraLeft.position.set(-eyeSeparation / 2, 1.6, 0);
         cameraLeft.rotation.set(0, yaw, 0);
-        cameraRight.rotation.set(0, yaw, 0);
+        cameraLeft.updateMatrixWorld();
 
-        // Rendre pour chaque oeil
-        leftRenderer.render(scene, cameraLeft);
-        rightRenderer.render(scene, cameraRight);
+        syncRightCamera();
       }
 
-      animate();
+      leftRenderer.render(scene, cameraLeft);
+      rightRenderer.render(scene, cameraRight);
+    }
 
-      // Ajuster la taille des canvas à la taille de la fenêtre
-      window.addEventListener('resize', () => {
-        leftCanvas.width = window.innerWidth / 2;
-        leftCanvas.height = window.innerHeight;
-        rightCanvas.width = window.innerWidth / 2;
-        rightCanvas.height = window.innerHeight;
+    animate();
 
-        leftRenderer.setSize(leftCanvas.width, leftCanvas.height);
-        rightRenderer.setSize(rightCanvas.width, rightCanvas.height);
+    // Resize window
+    window.addEventListener('resize', () => {
+      resizeCanvases();
+    });
 
-        cameraLeft.aspect = leftCanvas.width / leftCanvas.height;
-        cameraLeft.updateProjectionMatrix();
+    // Demander la permission capteur au premier clic/tap
+    window.addEventListener('click', () => {
+      requestDeviceOrientationPermission();
+      // On enlève le message après la première tentative
+      message.style.display = 'none';
+    }, { once: true });
 
-        cameraRight.aspect = rightCanvas.width / rightCanvas.height;
-        cameraRight.updateProjectionMatrix();
-      });
-    </script>
-  </body>
+  </script>
+</body>
 </html>
+
