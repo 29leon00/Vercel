@@ -74,17 +74,39 @@
     });
 
     // Clic sur cible
-    document.addEventListener('click', () => {
-      const cursor = document.querySelector('#cursor');
-      const intersections = cursor.components.raycaster.intersections;
+document.addEventListener("click", () => {
+  const cursor = document.querySelector("#cursor");
+  const intersections = cursor.components.raycaster.intersections;
 
-      if (intersections.length > 0) {
-        const target = intersections[0].object.el;
-        if (target && target.classList.contains('clickable')) {
-          target.emit('click');
-        }
-      }
-    });
+  if (intersections.length > 0) {
+    const target = intersections[0].object.el;
+    if (target && target.classList.contains("clickable")) {
+      target.emit("click");
+      return; // on sort car bouton cliqué
+    }
+  }
+
+  // Pas de bouton visé -> avancer la caméra vers la direction regardée
+  const cameraRig = document.querySelector("#cameraRig");
+
+  // Récupérer la direction vectorielle de la caméra (direction regardée)
+  const camera = cameraRig.components.camera.camera;
+  const direction = new THREE.Vector3();
+  camera.getWorldDirection(direction);
+
+  // Avancer la position de la caméra (position actuelle + direction * distance)
+  const currentPos = cameraRig.getAttribute("position");
+  const step = 0.5; // distance avancée par clic
+
+  const newPos = {
+    x: currentPos.x + direction.x * step,
+    y: currentPos.y + direction.y * step,
+    z: currentPos.z + direction.z * step,
+  };
+
+  cameraRig.setAttribute("position", newPos);
+});
+
 
     // Actions menu
     document.addEventListener('DOMContentLoaded', function () {
