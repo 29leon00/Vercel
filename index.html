@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>VR Cardboard - Menu emojis arrondi</title>
+  <title>Jeu VR - Tire sur les canards 🦆</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
@@ -23,39 +23,30 @@
     <!-- Fond panoramique -->
     <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
 
-<a-entity 
-  gltf-model="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/Duck/glTF/Duck.gltf"
-  position="0 1 -2"
-  scale="0.5 0.5 0.5"
-  animation-mixer>
-</a-entity>
+    <!-- Score affiché -->
+    <a-text id="scoreText" value="Score: 0" position="-0.6 2 -1" color="white" width="3"></a-text>
 
-    <!-- Menu emojis petit avec coins arrondis -->
-    <a-entity id="menu" position="0 1.15 -1.2">
-      <!-- Bouton 1 -->
-      <a-circle id="scene1" class="clickable"
-                radius="0.15"
-                color="#1b0085"
-                position="-0.3 0 0"
-                material="shader: flat"
-                event-set__enter="_event: mouseenter; color: #DADADA"
-                event-set__leave="_event: mouseleave; color: #ECECEC">
-        <a-text value="🌄" align="center" color="black" position="0 0 0.01" width="2"></a-text>
-      </a-circle>
+    <!-- Canards -->
+    <a-entity id="duck1" class="clickable duck"
+      gltf-model="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/Duck/glTF/Duck.gltf"
+      position="1 1 -3"
+      scale="0.3 0.3 0.3"
+      animation-mixer></a-entity>
 
-      <!-- Bouton 2 -->
-      <a-circle id="scene2" class="clickable"
-                radius="0.15"
-                color="#128500"
-                position="0.3 0 0"
-                material="shader: flat"
-                event-set__enter="_event: mouseenter; color: #DADADA"
-                event-set__leave="_event: mouseleave; color: #ECECEC">
-        <a-text value="🏙️" align="center" color="black" position="0 0 0.01" width="2"></a-text>
-      </a-circle>
+    <a-entity id="duck2" class="clickable duck"
+      gltf-model="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/Duck/glTF/Duck.gltf"
+      position="-1 1 -2"
+      scale="0.3 0.3 0.3"
+      animation-mixer></a-entity>
 
+    <a-entity id="duck3" class="clickable duck"
+      gltf-model="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/Duck/glTF/Duck.gltf"
+      position="0 1.2 -4"
+      scale="0.3 0.3 0.3"
+      animation-mixer></a-entity>
 
-    </a-entity>
+    <!-- Menu emojis arrondi -->
+
 
   </a-scene>
 
@@ -73,60 +64,74 @@
       }
     });
 
-    // Clic sur cible
-document.addEventListener("click", () => {
-  const cursor = document.querySelector("#cursor");
-  const intersections = cursor.components.raycaster.intersections;
+    // Avancer en cliquant dans le vide
+    document.addEventListener("click", () => {
+      const cursor = document.querySelector("#cursor");
+      const intersections = cursor.components.raycaster.intersections;
 
-  if (intersections.length > 0) {
-    const target = intersections[0].object.el;
-    if (target && target.classList.contains("clickable")) {
-      target.emit("click");
-      return; // on sort car bouton cliqué
-    }
-  }
+      if (intersections.length > 0) {
+        const target = intersections[0].object.el;
+        if (target && target.classList.contains("clickable")) {
+          target.emit("click");
+          return;
+        }
+      }
 
-  // Pas de bouton visé -> avancer la caméra vers la direction regardée
-  const cameraRig = document.querySelector("#cameraRig");
+      const cameraRig = document.querySelector("#cameraRig");
+      const camera = cameraRig.components.camera.camera;
+      const direction = new THREE.Vector3();
+      camera.getWorldDirection(direction);
 
-  // Récupérer la direction vectorielle de la caméra (direction regardée)
-  const camera = cameraRig.components.camera.camera;
-  const direction = new THREE.Vector3();
-  camera.getWorldDirection(direction);
+      const currentPos = cameraRig.getAttribute("position");
+      const step = 0.5;
 
-  // Avancer la position de la caméra (position actuelle + direction * distance)
-  const currentPos = cameraRig.getAttribute("position");
-  const step = 0.5; // distance avancée par clic
+      const newPos = {
+        x: currentPos.x + direction.x * step,
+        y: currentPos.y + direction.y * step,
+        z: currentPos.z + direction.z * step,
+      };
 
-  const newPos = {
-    x: currentPos.x + direction.x * step,
-    y: currentPos.y + direction.y * step,
-    z: currentPos.z + direction.z * step,
-  };
-
-  cameraRig.setAttribute("position", newPos);
-});
-
-
-    // Actions menu
-    document.addEventListener('DOMContentLoaded', function () {
-      document.querySelector('#scene1').addEventListener('click', () => changeScene(1));
-      document.querySelector('#scene2').addEventListener('click', () => changeScene(2));
+      cameraRig.setAttribute("position", newPos);
     });
 
-    // Changer fond + cube
-    function changeScene(id) {
-      const sky = document.querySelector('#sky');
-      const box = document.querySelector('#box');
+    // Score et tirs
+    let score = 0;
 
-      if (id === 1) {
-        sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
-        box.setAttribute('color', '#A0CED9');
-      } else {
-        sky.setAttribute('src', 'https://cdn.aframe.io/360-video-boilerplate/video/city.mp4');
-        box.setAttribute('color', '#D65F5F');
-      }
+    function shootDuck(el) {
+      el.parentNode.removeChild(el);
+      score++;
+      document.querySelector('#scoreText').setAttribute('value', `Score: ${score}`);
     }
+
+    // Déplacement aléatoire des canards
+    function randomizeDuckPositions() {
+      const ducks = document.querySelectorAll(".duck");
+      ducks.forEach(duck => {
+        const x = (Math.random() - 0.5) * 4;
+        const y = 1 + Math.random() * 0.5;
+        const z = -2 - Math.random() * 3;
+        duck.setAttribute("position", `${x} ${y} ${z}`);
+      });
+    }
+
+    // Initialisation
+    document.addEventListener("DOMContentLoaded", () => {
+      const ducks = document.querySelectorAll(".duck");
+      ducks.forEach(duck => {
+        duck.addEventListener("click", () => shootDuck(duck));
+      });
+
+      // Change position toutes les 2s
+      setInterval(randomizeDuckPositions, 2000);
+
+      // Menu emojis
+      document.querySelector('#scene1').addEventListener('click', () => {
+        document.querySelector('#sky').setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
+      });
+      document.querySelector('#scene2').addEventListener('click', () => {
+        document.querySelector('#sky').setAttribute('src', 'https://cdn.aframe.io/360-video-boilerplate/video/city.mp4');
+      });
+    });
   </script>
 </body>
 </html>
