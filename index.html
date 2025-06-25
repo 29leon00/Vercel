@@ -2,51 +2,138 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>VR Cardboard simple</title>
+    <title>Stéréoscopie sans gyro - Split screen</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <style>
+      body, html {
+        margin: 0; padding: 0; overflow: hidden; height: 100%;
+      }
+      #leftEye, #rightEye {
+        position: fixed;
+        top: 0; 
+        width: 50vw; 
+        height: 100vh; 
+        overflow: hidden;
+      }
+      #leftEye { left: 0; }
+      #rightEye { right: 0; }
+      #controls {
+        position: fixed; 
+        bottom: 10px; 
+        left: 50%; 
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.5);
+        padding: 10px;
+        border-radius: 8px;
+        color: white;
+        font-family: sans-serif;
+        z-index: 10;
+      }
+    </style>
   </head>
-  <body style="margin: 0;">
-    <a-scene vr-mode-ui="enabled: true">
-      <!-- Caméra simple avec look-controls -->
-      <a-camera position="0 1.6 0" look-controls>
-        <a-cursor
-          fuse="true"
-          fuse-timeout="1500"
-          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-          material="color: white; shader: flat"
-        ></a-cursor>
-      </a-camera>
-
-      <!-- Cube -->
-      <a-box
-        position="0 1.6 -3"
-        color="#4CC3D9"
-        class="clickable"
-        onclick="alert('clic !')"
-      ></a-box>
-
-      <!-- Fond panoramique -->
+  <body>
+    <!-- Deux scènes A-Frame avec caméras distinctes pour chaque oeil -->
+    <a-scene
+      embedded
+      style="width: 100vw; height: 100vh; pointer-events: none;"
+      id="scene"
+    >
+      <!-- Cube dans la scène principale -->
+      <a-box position="0 1.6 -3" color="#4CC3D9"></a-box>
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
+    <!-- Deux canvas avec rendu séparé pour chaque œil -->
+    <canvas id="leftEye"></canvas>
+    <canvas id="rightEye"></canvas>
+
+    <div id="controls">
+      <label for="yaw">Tourner : </label>
+      <input
+        type="range"
+        id="yaw"
+        min="-180"
+        max="180"
+        value="0"
+        step="1"
+      />
+    </div>
+
     <script>
-      // Pour iOS 13+ : demande d'autorisation capteur d'orientation
-      window.addEventListener("click", () => {
-        if (
-          typeof DeviceOrientationEvent !== "undefined" &&
-          typeof DeviceOrientationEvent.requestPermission === "function"
-        ) {
-          DeviceOrientationEvent.requestPermission()
-            .then((response) => {
-              if (response === "granted") {
-                console.log("Permission capteur activée");
-              } else {
-                alert("Permission capteur refusée");
-              }
-            })
-            .catch(console.error);
-        }
+      // Init A-Frame renderers, caméras, etc pour split screen
+
+      const sceneEl = document.querySelector('a-scene');
+      const renderer = sceneEl.renderer;
+      const scene = sceneEl.object3D;
+
+      // Création de deux caméras pour split screen
+      const cameraLeft = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
+      const cameraRight = new THREE.PerspectiveCamera(75, window.innerWidth / 2 / window.innerHeight, 0.1, 1000);
+
+      // Position initiale des caméras, séparées pour l'effet 3D (interoculaire ~0.06m)
+      const eyeSeparation = 0.06;
+      cameraLeft.position.set(-eyeSeparation / 2, 1.6, 0);
+      cameraRight.position.set(eyeSeparation / 2, 1.6, 0);
+
+      // Récupérer les canvas
+      const leftCanvas = document.getElementById('leftEye');
+      const rightCanvas = document.getElementById('rightEye');
+
+      // Configurer les canvas
+      leftCanvas.width = window.innerWidth / 2;
+      leftCanvas.height = window.innerHeight;
+      rightCanvas.width = window.innerWidth / 2;
+      rightCanvas.height = window.innerHeight;
+
+      // Définir les contextes WebGL
+      const leftContext = leftCanvas.getContext('webgl2') || leftCanvas.getContext('webgl');
+      const rightContext = rightCanvas.getContext('webgl2') || rightCanvas.getContext('webgl');
+
+      // Créer deux renderers WebGL
+      const leftRenderer = new THREE.WebGLRenderer({ canvas: leftCanvas, context: leftContext });
+      const rightRenderer = new THREE.WebGLRenderer({ canvas: rightCanvas, context: rightContext });
+
+      leftRenderer.setSize(leftCanvas.width, leftCanvas.height);
+      rightRenderer.setSize(rightCanvas.width, rightCanvas.height);
+
+      // Angle de rotation manuel (yaw)
+      let yaw = 0;
+
+      // Gérer slider pour tourner la vue
+      document.getElementById('yaw').addEventListener('input', (e) => {
+        yaw = THREE.MathUtils.degToRad(e.target.value);
+      });
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        // Appliquer rotation yaw aux deux caméras
+        cameraLeft.rotation.set(0, yaw, 0);
+        cameraRight.rotation.set(0, yaw, 0);
+
+        // Rendre pour chaque oeil
+        leftRenderer.render(scene, cameraLeft);
+        rightRenderer.render(scene, cameraRight);
+      }
+
+      animate();
+
+      // Ajuster la taille des canvas à la taille de la fenêtre
+      window.addEventListener('resize', () => {
+        leftCanvas.width = window.innerWidth / 2;
+        leftCanvas.height = window.innerHeight;
+        rightCanvas.width = window.innerWidth / 2;
+        rightCanvas.height = window.innerHeight;
+
+        leftRenderer.setSize(leftCanvas.width, leftCanvas.height);
+        rightRenderer.setSize(rightCanvas.width, rightCanvas.height);
+
+        cameraLeft.aspect = leftCanvas.width / leftCanvas.height;
+        cameraLeft.updateProjectionMatrix();
+
+        cameraRight.aspect = rightCanvas.width / rightCanvas.height;
+        cameraRight.updateProjectionMatrix();
       });
     </script>
   </body>
