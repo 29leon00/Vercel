@@ -1,120 +1,141 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>VR Cardboard - Scène sans casque</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <title>VR Cardboard - Menu emojis arrondi + scène cam</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
 </head>
 <body style="margin: 0;">
   <a-scene vr-mode-ui="enabled: true">
-
     <!-- Caméra + curseur -->
-    <a-entity id="cameraRig" camera look-controls position="0 1.6 0">
-      <a-entity id="cursor"
-                cursor="rayOrigin: entity" raycaster="objects: .clickable"
-                position="0 0 -1"
-                geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
-                material="color: white; shader: flat">
-      </a-entity>
+    <a-entity id="cameraRig" camera look-controls position="0 1.6 0" fov="45">
+      <a-entity
+        id="cursor"
+        cursor="rayOrigin: entity"
+        raycaster="objects: .clickable"
+        position="0 0 -1"
+        geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
+        material="color: white; shader: flat"
+      ></a-entity>
     </a-entity>
 
     <!-- Fond panoramique -->
     <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
 
     <!-- Cube -->
-
+    <a-box id="box" position="0 1.6 -3" color="#A0CED9"></a-box>
 
     <!-- Menu emojis petit avec coins arrondis -->
     <a-entity id="menu" position="0 1.15 -1.2">
-      <!-- Scène 1 -->
-      <a-circle id="scene1" class="clickable"
-                radius="0.15"
-                color="#ECECEC"
-                position="-0.45 0 0"
-                material="shader: flat"
-                event-set__enter="_event: mouseenter; color: #DADADA"
-                event-set__leave="_event: mouseleave; color: #ECECEC">
+      <!-- Bouton 1 -->
+      <a-circle
+        id="scene1"
+        class="clickable"
+        radius="0.15"
+        color="#ECECEC"
+        position="-0.5 0 0"
+        material="shader: flat"
+        event-set__enter="_event: mouseenter; color: #DADADA"
+        event-set__leave="_event: mouseleave; color: #ECECEC"
+      >
         <a-text value="🌅" align="center" color="black" position="0 0 0.01" width="2"></a-text>
       </a-circle>
 
-      <!-- Scène 2 -->
-      <a-circle id="scene2" class="clickable"
-                radius="0.15"
-                color="#ECECEC"
-                position="0 0 0"
-                material="shader: flat"
-                event-set__enter="_event: mouseenter; color: #DADADA"
-                event-set__leave="_event: mouseleave; color: #ECECEC">
+      <!-- Bouton 2 -->
+      <a-circle
+        id="scene2"
+        class="clickable"
+        radius="0.15"
+        color="#ECECEC"
+        position="0 0 0"
+        material="shader: flat"
+        event-set__enter="_event: mouseenter; color: #DADADA"
+        event-set__leave="_event: mouseleave; color: #ECECEC"
+      >
         <a-text value="🏞️" align="center" color="black" position="0 0 0.01" width="2"></a-text>
       </a-circle>
 
-      <!-- Scène 3 (vue fixe sans VR) -->
-      <a-circle id="scene3" class="clickable"
-                radius="0.15"
-                color="#ECECEC"
-                position="0.45 0 0"
-                material="shader: flat"
-                event-set__enter="_event: mouseenter; color: #DADADA"
-                event-set__leave="_event: mouseleave; color: #ECECEC">
+      <!-- Bouton 3 -->
+      <a-circle
+        id="scene3"
+        class="clickable"
+        radius="0.15"
+        color="#ECECEC"
+        position="0.5 0 0"
+        material="shader: flat"
+        event-set__enter="_event: mouseenter; color: #DADADA"
+        event-set__leave="_event: mouseleave; color: #ECECEC"
+      >
         <a-text value="🎥" align="center" color="black" position="0 0 0.01" width="2"></a-text>
       </a-circle>
     </a-entity>
-
   </a-scene>
 
   <script>
-    // Capteurs iOS
-    window.addEventListener('click', function () {
-      if (typeof DeviceOrientationEvent !== 'undefined' &&
-          typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // Activer capteurs (iOS)
+    window.addEventListener("click", function () {
+      if (
+        typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function"
+      ) {
         DeviceOrientationEvent.requestPermission()
-          .then(response => {
-            if (response === 'granted') console.log('Orientation activée');
-            else alert('Permission capteur refusée');
+          .then((response) => {
+            if (response === "granted") console.log("Orientation activée");
+            else alert("Permission capteur refusée");
           })
           .catch(console.error);
       }
     });
 
-    // Clic via écran
-    document.addEventListener('click', () => {
-      const cursor = document.querySelector('#cursor');
+    // Clic écran = clique sur objet pointé par curseur
+    document.addEventListener("click", () => {
+      const cursor = document.querySelector("#cursor");
       const intersections = cursor.components.raycaster.intersections;
 
       if (intersections.length > 0) {
         const target = intersections[0].object.el;
-        if (target && target.classList.contains('clickable')) {
-          target.emit('click');
+        if (target && target.classList.contains("clickable")) {
+          target.emit("click");
         }
       }
     });
 
-    // Événements de changement de scène
-    document.addEventListener('DOMContentLoaded', function () {
-      document.querySelector('#scene1').addEventListener('click', () => changeScene(1));
-      document.querySelector('#scene2').addEventListener('click', () => changeScene(2));
-      document.querySelector('#scene3').addEventListener('click', () => changeScene(3));
+    // Écouteurs clics menu
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelector("#scene1").addEventListener("click", () => changeScene(1));
+      document.querySelector("#scene2").addEventListener("click", () => changeScene(2));
+      document.querySelector("#scene3").addEventListener("click", () => changeScene(3));
     });
 
+    // Fonction changement scène
     function changeScene(id) {
-      const sky = document.querySelector('#sky');
-      const box = document.querySelector('#box');
-      const camera = document.querySelector('#cameraRig');
+      const sky = document.querySelector("#sky");
+      const box = document.querySelector("#box");
+      const cameraRig = document.querySelector("#cameraRig");
 
       if (id === 1) {
-        sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
-        box.setAttribute('color', '#A0CED9');
-        camera.setAttribute('position', '0 1.6 0');
+        // Scène 1: panorama + cube bleu clair
+        sky.setAttribute("src", "https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg");
+        box.setAttribute("color", "#A0CED9");
+        box.setAttribute("visible", true);
+        cameraRig.setAttribute("position", "0 1.6 0");
+        cameraRig.setAttribute("camera", "fov: 80"); // champ de vue normal VR
       } else if (id === 2) {
-        sky.setAttribute('src', 'https://raw.githubusercontent.com/aframevr/360-image-gallery/master/images/360.jpg');
-        box.setAttribute('color', '#D65F5F');
-        camera.setAttribute('position', '0 1.6 0');
+        // Scène 2: autre panorama + cube rouge
+        sky.setAttribute("src", "https://raw.githubusercontent.com/aframevr/360-image-gallery/master/images/360.jpg");
+        box.setAttribute("color", "#D65F5F");
+        box.setAttribute("visible", true);
+        cameraRig.setAttribute("position", "0 1.6 0");
+        cameraRig.setAttribute("camera", "fov: 80"); // champ de vue normal VR
       } else if (id === 3) {
-        sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
-        box.setAttribute('color', '#FFFFFF');
-        camera.setAttribute('position', '0 1.6 3'); // Caméra proche du ciel
+        // Scène 3: "Pas de casque VR" = juste la caméra zoomée + fond noir
+        sky.setAttribute("color", "#000000"); // fond noir uni, sans texture
+        sky.removeAttribute("src");
+        box.setAttribute("visible", false);
+        cameraRig.setAttribute("position", "0 1.6 0.5"); // avancer caméra un peu vers l'avant
+        cameraRig.setAttribute("camera", "fov: 30"); // champ de vue zoomé pour simuler écran normal
       }
     }
   </script>
