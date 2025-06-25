@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Jeu VR - Tire sur les canards 🦆</title>
+  <title>Jeu VR - Canards Attaquants 🦆</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
@@ -23,24 +23,33 @@
     <!-- Fond panoramique -->
     <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
 
-    <!-- Score affiché -->
+    <!-- Score et PV -->
     <a-text id="scoreText" value="Score: 0" position="-0.6 2 -1" color="white" width="3"></a-text>
+    <a-text id="lifeText" value="PV: 50" position="0.6 2 -1" color="red" width="3" align="right"></a-text>
+    <a-text id="gameOverText" value="" position="0 1.6 -1" color="red" width="4" align="center"></a-text>
 
     <!-- Container des canards -->
     <a-entity id="duckContainer"></a-entity>
 
-    <!-- Menu emojis arrondi -->
-
+    <!-- Menu emojis -->
 
   </a-scene>
 
   <script>
     let score = 0;
+    let life = 50;
     let duckIdCounter = 0;
     let ducks = [];
+    let gameRunning = true;
 
-    function updateScore() {
+    function updateUI() {
       document.querySelector('#scoreText').setAttribute('value', `Score: ${score}`);
+      document.querySelector('#lifeText').setAttribute('value', `PV: ${life}`);
+    }
+
+    function gameOver() {
+      gameRunning = false;
+      document.querySelector('#gameOverText').setAttribute('value', '💀 GAME OVER 💀');
     }
 
     function createDuck(x, y, z) {
@@ -52,45 +61,67 @@
       duck.setAttribute('scale', '0.3 0.3 0.3');
       duck.setAttribute('animation-mixer', '');
       document.querySelector('#duckContainer').appendChild(duck);
+      ducks.push(duck);
 
-      // Animation permanente de déplacement en aller-retour
-      const dx = (Math.random() - 0.5) * 4;
-      const dz = (Math.random() - 0.5) * 4;
-      duck.setAttribute('animation__x', {
-        property: 'position',
-        dir: 'alternate',
-        dur: 4000 + Math.random() * 2000,
-        easing: 'linear',
-        loop: true,
-        to: `${x + dx} ${y} ${z + dz}`
-      });
-
+      // Click pour tuer le canard
       duck.addEventListener('click', () => {
+        if (!gameRunning) return;
         duck.remove();
         ducks = ducks.filter(d => d !== duck);
         score++;
-        updateScore();
-        if (ducks.length === 0) {
-          setTimeout(spawnDucks, 1000);
-        }
+        updateUI();
+        if (ducks.length === 0) setTimeout(spawnDucks, 1000);
       });
 
-      ducks.push(duck);
+      // Mouvement vers la caméra
+      duck.tick = function () {
+        if (!gameRunning) return;
+
+        const cam = document.querySelector('#cameraRig');
+        const camPos = new THREE.Vector3();
+        cam.object3D.getWorldPosition(camPos);
+
+        const duckPos = new THREE.Vector3();
+        duck.object3D.getWorldPosition(duckPos);
+
+        const direction = camPos.clone().sub(duckPos).normalize().multiplyScalar(0.01); // vitesse
+        duck.object3D.position.add(direction);
+
+        // Collision : si distance < seuil => perdre PV
+        if (duckPos.distanceTo(camPos) < 0.5) {
+          duck.remove();
+          ducks = ducks.filter(d => d !== duck);
+          life -= 10;
+          updateUI();
+          if (life <= 0) gameOver();
+          else if (ducks.length === 0) setTimeout(spawnDucks, 1000);
+        }
+      };
     }
 
     function spawnDucks() {
+      if (!gameRunning) return;
       const num = Math.floor(Math.random() * 4) + 2; // entre 2 et 5
       for (let i = 0; i < num; i++) {
-        const x = (Math.random() - 0.5) * 4;
-        const y = 1 + Math.random() * 0.5;
-        const z = -2 - Math.random() * 3;
+        const x = (Math.random() - 0.5) * 6;
+        const y = 1 + Math.random() * 1;
+        const z = -5 - Math.random() * 3;
         createDuck(x, y, z);
       }
     }
 
+    // Animation par tick global
+    AFRAME.registerComponent('duck-manager', {
+      tick: function () {
+        ducks.forEach(duck => duck.tick && duck.tick());
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
-      updateScore();
+      updateUI();
       spawnDucks();
+
+      document.querySelector('a-scene').setAttribute('duck-manager', '');
 
       document.querySelector('#scene1').addEventListener('click', () => {
         document.querySelector('#sky').setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
