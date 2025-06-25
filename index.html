@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Cardboard DIY Stéréo</title>
+    <title>Cardboard DIY Stéréo Fix</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <style>
@@ -18,50 +18,44 @@
         width: 50vw;
         height: 100vh;
       }
-      .left {
-        left: 0;
-      }
-      .right {
-        right: 0;
-      }
+      .left { left: 0; }
+      .right { right: 0; }
     </style>
   </head>
   <body>
 
-    <!-- Vue œil gauche -->
     <a-scene embedded class="eye left" id="sceneL">
       <a-entity id="camL" camera position="-0.03 1.6 0" rotation="0 0 0"></a-entity>
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
-    <!-- Vue œil droit -->
     <a-scene embedded class="eye right" id="sceneR">
       <a-entity id="camR" camera position="0.03 1.6 0" rotation="0 0 0"></a-entity>
       <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
     </a-scene>
 
-    <!-- Gestion manuelle orientation -->
     <script>
-      let alpha = 0, beta = 0, gamma = 0;
+      let initialAlpha = null;
 
       function handleOrientation(event) {
-        if (typeof event.alpha === 'number') {
-          alpha = event.alpha;
-          beta = event.beta;
-          gamma = event.gamma;
+        const alpha = event.alpha || 0; // Azimuth (compas)
+        const beta = event.beta || 0;   // Inclinaison avant/arrière
+        const gamma = event.gamma || 0; // Inclinaison gauche/droite
 
-          // Convertir les angles pour A-Frame
-          const x = THREE.MathUtils.clamp(beta - 90, -90, 90);  // haut/bas
-          const y = alpha;  // gauche/droite
-          const z = gamma;
+        if (initialAlpha === null) initialAlpha = alpha;
 
-          // Appliquer la rotation manuellement aux 2 caméras
-          document.getElementById("camL").setAttribute("rotation", `${x} ${y} ${z}`);
-          document.getElementById("camR").setAttribute("rotation", `${x} ${y} ${z}`);
-        }
+        // Rotation horizontale uniquement (regard gauche/droite)
+        const yaw = (alpha - initialAlpha + 360) % 360;
+
+        // Optionnel : mouvement haut/bas (pitch)
+        const pitch = THREE.MathUtils.clamp(beta - 90, -45, 45);
+
+        // Appliquer aux deux caméras
+        document.getElementById("camL").setAttribute("rotation", `${pitch} ${yaw} 0`);
+        document.getElementById("camR").setAttribute("rotation", `${pitch} ${yaw} 0`);
       }
 
-      // Pour iOS
+      // Permission (iOS)
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -70,16 +64,15 @@
               if (response === 'granted') {
                 window.addEventListener('deviceorientation', handleOrientation);
               } else {
-                alert('Permission capteurs refusée.');
+                alert('Permission refusée');
               }
             })
             .catch(console.error);
         } else {
-          // Android ou desktop
+          // Android ou autres
           window.addEventListener('deviceorientation', handleOrientation);
         }
       });
     </script>
   </body>
 </html>
-
