@@ -1,32 +1,135 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>VR Cardboard avec rotation de tête</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  </head>
-  <body style="margin: 0;">
-    <a-scene vr-mode-ui="enabled: true">
-      <!-- Caméra avec look-controls activé -->
-      <a-entity camera look-controls position="0 1.6 0">
-        <a-entity 
-          cursor="fuse: true; fuseTimeout: 1500" 
-          position="0 0 -1"
-          geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
-          material="color: white; shader: flat">
-        </a-entity>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>VR Cardboard avec rotation de tête et Stéréoscopie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- A-Frame library for VR experiences -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <!-- Tailwind CSS for modern, responsive styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Ensure the body and HTML take full height */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden; /* Prevent scrolling */
+      font-family: 'Inter', sans-serif; /* Use Inter font */
+    }
+    /* A-Frame scene should fill the available space */
+    a-scene {
+      width: 100%;
+      height: 100%;
+    }
+    /* Custom styling for the message box */
+    #messageBox {
+      z-index: 1000; /* Ensure it's above other elements */
+      transition: opacity 0.5s ease-in-out; /* Smooth transition for appearance/disappearance */
+    }
+    /* Hide scrollbars for a cleaner VR experience */
+    ::-webkit-scrollbar {
+      display: none;
+    }
+    html {
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center h-full relative">
+
+  <!-- Custom Message Box - Replaces alert() -->
+  <div id="messageBox" class="fixed top-5 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg opacity-0 pointer-events-none text-center text-lg md:text-xl font-bold z-50 transition-opacity duration-500">
+    <!-- Message content will be inserted here by JavaScript -->
+  </div>
+
+  <!-- Instructions for the user -->
+  <div class="absolute top-0 mt-4 p-3 bg-gray-800 bg-opacity-70 rounded-lg text-sm md:text-base text-center max-w-sm z-40">
+    <p>
+      Bienvenue dans l'expérience VR !
+      <br>
+      Cliquez sur l'icône "VR" en bas à droite pour entrer en mode stéréoscopique.
+      <br>
+      Regardez le cube et cliquez pour interagir.
+    </p>
+  </div>
+
+  <!-- A-Frame Scene -->
+  <a-scene vr-mode-ui="enabled: true">
+    <!-- Caméra avec look-controls activé pour la rotation de tête -->
+    <!-- `look-controls` automatically provides head tracking for stereoscopy -->
+    <a-entity camera look-controls position="0 1.6 0">
+      <!-- Cursor for interaction, visible in VR mode -->
+      <a-entity
+        cursor="fuse: true; fuseTimeout: 1500"
+        position="0 0 -1"
+        geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
+        material="color: white; shader: flat">
       </a-entity>
+    </a-entity>
 
-      <!-- Cube interactif -->
-      <a-box position="0 1.6 -3" color="#4CC3D9" onclick="alert('clic !')"></a-box>
+    <!-- Cube interactif -->
+    <!-- The 'click' event listener will be attached via JavaScript -->
+    <a-box id="interactiveCube" position="0 1.6 -3" color="#4CC3D9"
+           shadow="cast: true;"
+           material="shader: standard; metalness: 0.5; roughness: 0.3;"
+           animation__scale="property: scale; to: 1.1 1.1 1.1; dur: 200; startEvents: click; dir: alternate; loop: 1">
+    </a-box>
 
-      <!-- Fond panoramique -->
-      <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
-    </a-scene>
+    <!-- Simple ground plane -->
+    <a-plane position="0 0 -4" rotation="-90 0 0" width="10" height="10" color="#7BC8A4" shadow="receive: true;"></a-plane>
 
-    <!-- Demande de permission capteurs (iOS/Android) -->
-    <script>
+    <!-- Lighting -->
+    <a-light type="ambient" color="#BBB"></a-light>
+    <a-light type="directional" position="1 1 1" intensity="0.5" shadow="cast: true;"></a-light>
+
+
+    <!-- Fond panoramique -->
+    <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
+  </a-scene>
+
+  <!-- JavaScript for custom message box and device orientation permission -->
+  <script>
+    // Function to display a custom message temporarily
+    function showMessage(message, duration = 3000) {
+      const messageBox = document.getElementById('messageBox');
+      messageBox.textContent = message;
+      messageBox.classList.remove('opacity-0', 'pointer-events-none');
+      messageBox.classList.add('opacity-100');
+
+      setTimeout(() => {
+        messageBox.classList.remove('opacity-100');
+        messageBox.classList.add('opacity-0', 'pointer-events-none');
+      }, duration);
+    }
+
+    // Wait for the DOM to be fully loaded before setting up event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      const scene = document.querySelector('a-scene');
+      const interactiveCube = document.getElementById('interactiveCube');
+
+      // Attach click listener to the A-Frame cube after the scene is loaded
+      // This ensures the A-Frame elements are ready
+      if (scene.hasLoaded) {
+        setupCubeInteraction();
+      } else {
+        scene.addEventListener('loaded', setupCubeInteraction);
+      }
+
+      function setupCubeInteraction() {
+        if (interactiveCube) {
+          interactiveCube.addEventListener('click', function () {
+            showMessage('Cube cliqué !'); // Use custom message box instead of alert
+          });
+        } else {
+          console.error("Interactive cube not found.");
+        }
+      }
+
+      // Demande de permission capteurs (iOS/Android)
+      // This is triggered by any click on the window, usually the first interaction
       window.addEventListener('click', function () {
         if (typeof DeviceOrientationEvent !== 'undefined' &&
             typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -34,13 +137,19 @@
             .then(function (response) {
               if (response === 'granted') {
                 console.log('Orientation activée');
+                showMessage('Capteurs d\'orientation activés !', 2000);
               } else {
-                alert('Permission capteur refusée');
+                showMessage('Permission capteur refusée. L\'orientation de la tête pourrait ne pas fonctionner.', 5000);
+                console.warn('Permission capteur refusée');
               }
             })
-            .catch(console.error);
+            .catch(function(error) {
+              console.error('Erreur lors de la demande de permission des capteurs:', error);
+              showMessage('Erreur lors de la demande de permission des capteurs.', 5000);
+            });
         }
-      });
-    </script>
-  </body>
+      }, { once: true }); // Use { once: true } to trigger only on the first click
+    });
+  </script>
+</body>
 </html>
