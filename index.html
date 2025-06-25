@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <title>VR Cardboard avec rotation de tête et Stéréoscopie</title>
+  <title>VR Cardboard avec rotation de tête et Stéréoscopie Manuelle</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- A-Frame library for VR experiences -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
@@ -48,19 +48,22 @@
   <!-- Instructions for the user -->
   <div class="absolute top-0 mt-4 p-3 bg-gray-800 bg-opacity-70 rounded-lg text-sm md:text-base text-center max-w-sm z-40">
     <p>
-      Bienvenue dans l'expérience VR !
+      Bienvenue dans l'expérience stéréoscopique !
       <br>
-      Cliquez sur l'icône "VR" en bas à droite pour entrer en mode stéréoscopique.
+      La scène est affichée en 3D (deux vues côte à côte).
+      <br>
+      Utilisez la souris ou le toucher pour tourner la tête.
       <br>
       Regardez le cube et cliquez pour interagir.
     </p>
   </div>
 
   <!-- A-Frame Scene -->
-  <a-scene vr-mode-ui="enabled: true">
+  <!-- vr-mode-ui is removed as per user request to avoid browser's native VR mode -->
+  <a-scene>
     <!-- Caméra avec look-controls activé pour la rotation de tête -->
-    <!-- `look-controls` automatically provides head tracking for stereoscopy -->
-    <a-entity camera look-controls position="0 1.6 0">
+    <!-- The 'stereo="mode: flat"' component forces side-by-side rendering -->
+    <a-entity camera look-controls position="0 1.6 0" stereo="mode: flat">
       <!-- Cursor for interaction, visible in VR mode -->
       <a-entity
         cursor="fuse: true; fuseTimeout: 1500"
@@ -90,7 +93,7 @@
     <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
   </a-scene>
 
-  <!-- JavaScript for custom message box and device orientation permission -->
+  <!-- JavaScript for custom message box -->
   <script>
     // Function to display a custom message temporarily
     function showMessage(message, duration = 3000) {
@@ -127,29 +130,10 @@
           console.error("Interactive cube not found.");
         }
       }
-
-      // Demande de permission capteurs (iOS/Android)
-      // This is triggered by any click on the window, usually the first interaction
-      window.addEventListener('click', function () {
-        if (typeof DeviceOrientationEvent !== 'undefined' &&
-            typeof DeviceOrientationEvent.requestPermission === 'function') {
-          DeviceOrientationEvent.requestPermission()
-            .then(function (response) {
-              if (response === 'granted') {
-                console.log('Orientation activée');
-                showMessage('Capteurs d\'orientation activés !', 2000);
-              } else {
-                showMessage('Permission capteur refusée. L\'orientation de la tête pourrait ne pas fonctionner.', 5000);
-                console.warn('Permission capteur refusée');
-              }
-            })
-            .catch(function(error) {
-              console.error('Erreur lors de la demande de permission des capteurs:', error);
-              showMessage('Erreur lors de la demande de permission des capteurs.', 5000);
-            });
-        }
-      }, { once: true }); // Use { once: true } to trigger only on the first click
+      // The DeviceOrientationEvent.requestPermission() script is removed as per user request.
+      // Look-controls will default to mouse/touch input if no gyroscope is available.
     });
   </script>
 </body>
 </html>
+
