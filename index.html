@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>VR Cardboard avec menu stylé</title>
+  <title>VR Cardboard - Menu bas et doux</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
@@ -23,33 +23,35 @@
     <!-- Fond panoramique -->
     <a-sky id="sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
 
-    <!-- Objet visible (change de couleur selon la scène) -->
-    <a-box id="box" position="0 1.6 -3" color="#4CC3D9"></a-box>
+    <!-- Cube visuel -->
+    <a-box id="box" position="0 1.6 -3" color="#A0CED9"></a-box>
 
-    <!-- Menu stylé incurvé -->
-    <a-entity id="menu" position="0 1.6 -2">
+    <!-- Menu stylé en bas et proche -->
+    <a-entity id="menu" position="0 1.2 -1.2">
       <!-- Bouton Scène 1 -->
       <a-plane id="scene1" class="clickable"
-               position="-0.8 0 0"
-               width="0.6" height="0.3"
-               color="#FF9F1C"
+               position="-0.5 0 0"
+               width="0.5" height="0.25"
+               color="#E6E6FA"
                material="shader: flat"
-               geometry="primitive: plane; width: 0.6; height: 0.3"
+               geometry="primitive: plane; width: 0.5; height: 0.25"
                text="value: 🌅 Scène 1; align: center; color: black; width: 2.5"
-               event-set__enter="_event: mouseenter; color: #FFBF69"
-               event-set__leave="_event: mouseleave; color: #FF9F1C">
+               event-set__enter="_event: mouseenter; color: #D8D8F6"
+               event-set__leave="_event: mouseleave; color: #E6E6FA"
+               material="shader: flat; side: double; transparent: false">
       </a-plane>
 
       <!-- Bouton Scène 2 -->
       <a-plane id="scene2" class="clickable"
-               position="0.8 0 0"
-               width="0.6" height="0.3"
-               color="#2EC4B6"
+               position="0.5 0 0"
+               width="0.5" height="0.25"
+               color="#D0F0C0"
                material="shader: flat"
-               geometry="primitive: plane; width: 0.6; height: 0.3"
+               geometry="primitive: plane; width: 0.5; height: 0.25"
                text="value: 🏞️ Scène 2; align: center; color: black; width: 2.5"
-               event-set__enter="_event: mouseenter; color: #80DED9"
-               event-set__leave="_event: mouseleave; color: #2EC4B6">
+               event-set__enter="_event: mouseenter; color: #C2E6B8"
+               event-set__leave="_event: mouseleave; color: #D0F0C0"
+               material="shader: flat; side: double; transparent: false">
       </a-plane>
     </a-entity>
 
@@ -72,7 +74,7 @@
       }
     });
 
-    // Détecter où pointe le curseur lors d’un clic écran
+    // Simuler le clic sur l'objet visé
     document.addEventListener('click', () => {
       const cursor = document.querySelector('#cursor');
       const intersections = cursor.components.raycaster.intersections;
@@ -85,26 +87,23 @@
       }
     });
 
-    // Actions quand un bouton est cliqué
+    // Réagir aux clics
     document.addEventListener('DOMContentLoaded', function () {
-      const scene1 = document.querySelector('#scene1');
-      const scene2 = document.querySelector('#scene2');
-
-      scene1.addEventListener('click', () => changeScene(1));
-      scene2.addEventListener('click', () => changeScene(2));
+      document.querySelector('#scene1').addEventListener('click', () => changeScene(1));
+      document.querySelector('#scene2').addEventListener('click', () => changeScene(2));
     });
 
-    // Changement de scène
+    // Changer la scène
     function changeScene(id) {
       const sky = document.querySelector('#sky');
       const box = document.querySelector('#box');
 
       if (id === 1) {
         sky.setAttribute('src', 'https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg');
-        box.setAttribute('color', '#4CC3D9');
+        box.setAttribute('color', '#A0CED9');
       } else if (id === 2) {
         sky.setAttribute('src', 'https://raw.githubusercontent.com/aframevr/360-image-gallery/master/images/360.jpg');
-        box.setAttribute('color', '#EF2D5E');
+        box.setAttribute('color', '#D65F5F');
       }
     }
   </script>
