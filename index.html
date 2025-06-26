@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jeu VR Cardboard : Collecte de Cubes</title>
+    <title>Jeu VR Cardboard : Survie aux Personnages</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/zcanter/aframe-gradient-sky@master/dist/gradientsky.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #1a1a2e; color: #e0e0e0; }
         a-scene {
@@ -26,31 +27,7 @@
             z-index: 10;
         }
         .message-box {
-            background-color: rgba(0, 0, 0, 0.7);
-            padding: 20px 30px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-            text-align: center;
-            pointer-events: auto; /* Réactive les événements de pointeur pour la boîte elle-même */
-            max-width: 80%;
-            margin-bottom: 20px;
-            display: none; /* Caché par défaut */
-        }
-        .message-box button {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1em;
-            margin-top: 15px;
-            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-        .message-box button:hover {
-            background-color: #0056b3;
-            transform: translateY(-2px);
+            display: none; /* Caché par défaut et toujours, car les alertes sont supprimées */
         }
         .button-container {
             position: absolute;
@@ -58,32 +35,58 @@
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 15px;
+            gap: 20px; /* Augmente l'espace entre les boutons */
             pointer-events: auto; /* Réactive les événements de pointeur pour les boutons */
             z-index: 11; /* S'assure que les boutons sont au-dessus des autres éléments d'interface */
         }
         .action-button {
             background: linear-gradient(145deg, #6a0572, #440348);
             color: white;
-            padding: 12px 25px;
+            padding: 15px 30px; /* Plus grand */
             border: none;
-            border-radius: 10px;
+            border-radius: 12px; /* Coins plus arrondis */
             cursor: pointer;
-            font-size: 1.1em;
+            font-size: 1.2em; /* Texte plus grand */
             font-weight: bold;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5); /* Ombre plus prononcée */
             transition: all 0.3s ease;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px; /* Espacement des lettres */
+            position: relative; /* Pour l'effet de bulle */
+            overflow: hidden;
         }
         .action-button:hover {
             background: linear-gradient(145deg, #440348, #6a0572);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+            transform: translateY(-5px); /* S'élève plus haut au survol */
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.7); /* Ombre plus forte au survol */
         }
         .action-button:active {
             transform: translateY(0);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            background: #330236; /* Couleur plus sombre au clic */
+        }
+        /* Effet de bulle sur les boutons */
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300%;
+            height: 300%;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: block;
+            -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: all 0.7s ease-in-out;
+            z-index: 0;
+        }
+        .action-button:active::before {
+            width: 0;
+            height: 0;
+            opacity: 1;
+            transition: all 0.0s ease-in-out;
         }
     </style>
 </head>
@@ -101,10 +104,10 @@
     </div>
 
     <a-scene vr-mode-ui="enabled: true">
-        <!-- cameraRig est l'entité qui se déplace dans le monde. La tête (caméra) est son enfant. -->
-        <a-entity id="cameraRig" position="0 0 0">
+        <!-- cameraRig est l'entité qui se déplace dans le monde. Elle a maintenant le composant gamepad-movement. -->
+        <a-entity id="cameraRig" position="0 0 0" gamepad-movement>
             <!-- La tête (caméra) a les look-controls pour le suivi de la tête et un curseur pour l'interaction par le regard -->
-            <!-- IMPORTANT : ajout de wasd-controls="enabled: false" pour éviter les conflits avec le mouvement personnalisé -->
+            <!-- IMPORTANT : wasd-controls="enabled: false" pour éviter les conflits avec le mouvement personnalisé -->
             <a-entity id="head" camera look-controls wasd-controls="enabled: false" position="0 1.6 0">
                 <!-- Le curseur A-Frame gère le réticule et l'interaction par le regard (fuse) -->
                 <a-entity
@@ -113,21 +116,30 @@
                     geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.025"
                     material="color: white; shader: flat"
                 ></a-entity>
-                <!-- Texte du score, positionné pour être un HUD VR -->
-                <a-text value="Score: 0" id="scoreText" position="-0.5 0.3 -1.5" width="2" color="white"></a-text>
-                <!-- Texte des cubes restants, positionné pour être un HUD VR -->
-                <a-text value="Cubes restants: 0" id="remainingTargetsText" position="-0.5 0.1 -1.5" width="2" color="white"></a-text>
-                <!-- Texte de statut du jeu (ex: "Partie terminée!", "Collectez les cubes!") -->
+                <!-- Texte du score, positionné tout en haut à gauche de l'écran du joueur -->
+                <a-text value="Score: 0" id="scoreText" position="-0.7 0.45 -1.5" width="2" color="white" align="left"></a-text>
+                <!-- Barre de vie et texte de vie tout en haut à droite -->
+                <a-plane id="healthBar" position="0.7 0.45 -1.5" width="0.4" height="0.05" color="#FF0000"></a-plane>
+                <a-text id="healthText" value="Vie: 50" position="0.7 0.45 -1.5" width="0.8" color="white" align="center"></a-text>
+                <!-- Texte de statut du jeu (ex: "Partie terminée!") -->
                 <a-text value="" id="gameStatusText" position="0 0.5 -2" width="3" color="#FFFF00" align="center"></a-text>
             </a-entity>
         </a-entity>
 
+        <!-- Assets (Modèles GLTF et textures) -->
+        <a-assets>
+            <!-- Modèle GLTF pour les personnages (CesiumMan) -->
+            <a-asset-item id="character-model" src="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/refs/heads/main/2.0/CesiumMan/glTF/CesiumMan.gltf"></a-asset-item>
+            <!-- Texture pour le sol -->
+            <img id="ground-texture" src="https://aframe.io/assets/images/land.jpg" alt="Texture de sol">
+        </a-assets>
 
-        <!-- Plan du sol -->
-        <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#808080"></a-plane>
+        <!-- Plan du sol avec la texture standard d'A-Frame -->
+        <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" src="#ground-texture" repeat="4 4"></a-plane>
 
-        <!-- Ciel panoramique pour l'arrière-plan -->
-        <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/sechelt.jpg"></a-sky>
+        <!-- Ciel panoramique avec le dégradé -->
+<a-gradient-sky material="shader: gradient; topColor: 70 130 180; bottomColor: 176 224 230;"></a-gradient-sky>
+
     </a-scene>
 
     <script type="module">
@@ -135,25 +147,19 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 
-        // Variables de jeu
+        // Variables de jeu (globales pour être accessibles par le composant et l'UI)
         let score = 0;
-        const totalCubesToCollect = 10; // Nombre total de cubes à collecter pour gagner
-        let collectedCubes = 0;
+        const totalEnemiesToSpawn = 15; // Nombre total d'ennemis à faire apparaître
+        let enemiesSpawned = 0; // Compteur d'ennemis déjà apparus
         let gameRunning = false;
-        let cubeEntities = []; // Stocke les références aux entités cubes dans la scène
+        let enemyEntities = []; // Stocke les références aux entités ennemies dans la scène
 
-        // Variables de contrôle de mouvement
-        const moveSpeed = 0.1; // Vitesse de déplacement
-        let moveForward = false;
-        let moveBackward = false;
-        let moveLeft = false;
-        let moveRight = false;
-        let gamepadConnected = false;
-        let gamepadIndex = null;
-        let gamepadButtonAPressed = false; // Pour gérer un seul tir par pression du bouton
+        const maxPlayerHealth = 50;
+        let playerHealth = maxPlayerHealth;
 
         // Références aux éléments d'UI HTML et A-Frame
-        const messageBox = document.getElementById('messageBox');
+        // Note: messageBox est maintenant utilisé uniquement pour les logs console
+        const messageBox = document.getElementById('messageBox'); 
         const messageText = document.getElementById('messageText');
         const messageBoxButton = document.getElementById('messageBoxButton');
         const enterVRButton = document.getElementById('enterVRButton');
@@ -161,20 +167,20 @@
         const restartGameButton = document.getElementById('restartGameButton');
         const sceneEl = document.querySelector('a-scene');
 
-        const cameraRig = document.getElementById('cameraRig');
-        const head = document.getElementById('head');
+        // Références aux éléments de l'interface du jeu en VR
         const scoreText = document.getElementById('scoreText');
-        const remainingTargetsText = document.getElementById('remainingTargetsText');
+        const healthBar = document.getElementById('healthBar');
+        const healthText = document.getElementById('healthText');
         const gameStatusText = document.getElementById('gameStatusText');
 
         // --- Fonctions d'UI ---
+        // showMessageBox est une fonction interne de débogage/logging, elle n'affiche plus de boîte visible
         function showMessageBox(message) {
-            messageText.innerText = message;
-            messageBox.style.display = 'block';
+            console.log("Message du jeu:", message);
         }
 
         function hideMessageBox() {
-            messageBox.style.display = 'none';
+            // Cette fonction est inutile car la boîte est cachée
         }
 
         // --- Gestion des événements UI HTML ---
@@ -197,7 +203,7 @@
             enterVRButton.style.display = 'inline-block';
             exitVRButton.style.display = 'none';
             restartGameButton.style.display = 'none'; // Cache le bouton rejouer
-            endGame("Jeu mis en pause. Revenez quand vous voulez !"); // Termine le jeu en mode pause
+            endGame("Jeu mis en pause."); // Termine le jeu en mode pause (message simplifié)
         });
 
         restartGameButton.addEventListener('click', () => {
@@ -219,12 +225,12 @@
                         if (response === 'granted') {
                             console.log('Orientation activée pour la VR');
                         } else {
-                            showMessageBox('Permission capteur refusée. Le suivi de la tête pourrait être limité.');
+                            console.warn('Permission capteur refusée. Le suivi de la tête pourrait être limité.');
                         }
                     })
                     .catch(console.error);
             } else {
-                 showMessageBox("Votre appareil ne supporte pas la demande de permission d'orientation, mais le suivi de la tête peut fonctionner si les permissions sont déjà données.");
+                 console.log("Votre appareil ne supporte pas la demande de permission d'orientation, mais le suivi de la tête peut fonctionner si les permissions sont déjà données.");
             }
         });
 
@@ -240,263 +246,288 @@
         // Fonction pour démarrer une nouvelle partie
         function startGame() {
             score = 0;
-            collectedCubes = 0;
+            playerHealth = maxPlayerHealth; // Réinitialise la vie
+            enemiesSpawned = 0; // Réinitialise le compteur d'ennemis
             gameRunning = true;
-            clearCubes(); // Supprime tous les cubes précédents
-            spawnCubes(totalCubesToCollect); // Crée de nouveaux cubes
+            clearEnemies(); // Supprime tous les ennemis précédents
+            spawnEnemies(totalEnemiesToSpawn); // Crée de nouveaux ennemis
             updateGameUI();
-            gameStatusText.setAttribute('value', 'Collectez les cubes !');
-            showMessageBox("Jeu démarré ! Collectez les " + totalCubesToCollect + " cubes flottants.");
+            gameStatusText.setAttribute('value', 'Survivez aux personnages !');
+            console.log("Jeu démarré !"); // Log de débogage
         }
 
         // Fonction pour terminer la partie
         function endGame(message = "Partie terminée !") {
             gameRunning = false;
-            clearCubes(); // S'assure que tous les cubes sont supprimés
+            clearEnemies(); // S'assure que tous les ennemis sont supprimés
             gameStatusText.setAttribute('value', message + " Votre score final : " + score + " !");
-            showMessageBox(message + " Votre score final : " + score + " !");
+            console.log(message + " Votre score final : " + score + " !"); // Log de débogage
             restartGameButton.style.display = 'inline-block'; // Montre le bouton rejouer
         }
 
-        // Fonction pour créer et placer un cube
-        function spawnCube() {
-            // Position aléatoire dans une zone jouable
-            const x = (Math.random() - 0.5) * 10; // entre -5 et 5
-            const y = 0.5 + Math.random() * 3;   // entre 0.5 et 3.5
-            const z = -5 - Math.random() * 10;  // entre -5 et -15 (plus loin que la caméra)
+        // Fonction pour créer et placer un ennemi (personnage)
+        function spawnEnemy() {
+            if (!gameRunning) return;
 
-            const cube = document.createElement('a-box');
-            cube.setAttribute('position', `${x} ${y} ${z}`);
-            const randomColor = getRandomColor();
-            cube.setAttribute('color', randomColor);
-            cube.setAttribute('scale', '0.5 0.5 0.5'); // Taille du cube
-            cube.setAttribute('animation__rotate', 'property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear;'); // Animation de rotation
+            // Position aléatoire dans une zone jouable, éloignée du joueur
+            const x = (Math.random() - 0.5) * 15; // entre -7.5 et 7.5
+            const z = (Math.random() > 0.5 ? 1 : -1) * (10 + Math.random() * 10); // entre -20 et -10 OU 10 et 20
+            const y = 0.8; // Ajusté pour le modèle CesiumMan et pour être clairement au-dessus du sol
+
+            const enemyEl = document.createElement('a-entity');
+            enemyEl.setAttribute('gltf-model', '#character-model'); // Utilise le nouveau modèle GLTF
+            enemyEl.setAttribute('position', `${x} ${y} ${z}`);
+            // Le modèle CesiumMan peut être grand, ajuster l'échelle si nécessaire.
+            // Une échelle de 0.5 est souvent un bon point de départ pour les modèles GLTF par défaut.
+            enemyEl.setAttribute('scale', '0.5 0.5 0.5'); 
+            enemyEl.setAttribute('enemy', 'speed: 0.05'); // Attache le composant ennemi
+
+            // Animation de rotation pour les ennemis (pour un effet visuel)
+            enemyEl.setAttribute('animation__rotate', 'property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear;');
             
-            // Interaction par le regard (gaze-based interaction)
-            cube.setAttribute('event-set__enter', 'material.color: #ffff00'); // Surligne en jaune au survol
-            cube.setAttribute('event-set__leave', `material.color: ${randomColor}`); // Revient à la couleur d'origine
-            // Note: l'événement 'click' sur le cube est déclenché par le curseur A-Frame (gaze fuse)
-            cube.setAttribute('event-set__click', 'scale: 0.2 0.2 0.2; material.color: #007bff;'); // Effet de rétrécissement au clic
-            cube.setAttribute('animation__collect', 'property: scale; to: 0 0 0; dur: 100; easing: easeOutQuad; startEvents: animationcomplete__click');
+            sceneEl.appendChild(enemyEl);
+            enemyEntities.push(enemyEl);
+            enemiesSpawned++;
 
-            // Événement de clic pour collecter le cube (déclenché par le gaze ou par les contrôles manuels)
-            cube.addEventListener('click', function() {
-                if (gameRunning) {
-                    collectCube(this);
-                }
-            });
-
-            sceneEl.appendChild(cube);
-            cubeEntities.push(cube);
-        }
-
-        // Fonction de collecte de cube
-        function collectCube(cubeElement) {
-            collectedCubes++;
-            score += 10; // Chaque cube rapporte 10 points
-            updateGameUI();
-            cubeElement.parentNode.removeChild(cubeElement); // Supprime le cube de la scène
-            cubeEntities = cubeEntities.filter(ent => ent !== cubeElement); // Supprime de la liste
-            checkWinCondition();
-        }
-
-        // Fonction pour générer une couleur aléatoire
-        function getRandomColor() {
-            const letters = '0123456789ABCDEF';
-            let color = '#';
-            for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)];
+            // Si tous les ennemis initiaux sont apparus, on peut arrêter le spawn ici ou continuer à en faire apparaître périodiquement
+            if (enemiesSpawned < totalEnemiesToSpawn) {
+                setTimeout(spawnEnemy, 2000 + Math.random() * 1000); // Fait apparaître le prochain après un délai
             }
-            return color;
         }
 
-        // Fonction pour créer plusieurs cubes
-        function spawnCubes(count) {
+        // Fonction pour créer plusieurs ennemis
+        function spawnEnemies(count) {
             for (let i = 0; i < count; i++) {
-                spawnCube();
+                // Initial spawn can be staggered
+                setTimeout(spawnEnemy, i * 500); // Apparition toutes les 0.5 secondes
             }
         }
 
-        // Fonction pour supprimer tous les cubes de la scène
-        function clearCubes() {
-            cubeEntities.forEach(cube => {
-                if (cube.parentNode) {
-                    cube.parentNode.removeChild(cube);
+        // Fonction pour supprimer tous les ennemis de la scène
+        function clearEnemies() {
+            enemyEntities.forEach(enemy => {
+                if (enemy.parentNode) {
+                    enemy.parentNode.removeChild(enemy);
                 }
             });
-            cubeEntities = []; // Réinitialise la liste
+            enemyEntities = []; // Réinitialise la liste
         }
 
-        // Met à jour l'affichage du score et des cubes restants
+        // Met à jour l'affichage du score et de la vie
         function updateGameUI() {
             scoreText.setAttribute('value', `Score: ${score}`);
-            remainingTargetsText.setAttribute('value', `Cubes restants: ${totalCubesToCollect - collectedCubes}`);
+            healthText.setAttribute('value', `Vie: ${playerHealth}`);
+
+            // Met à jour la largeur de la barre de vie
+            const healthPercentage = playerHealth / maxPlayerHealth;
+            healthBar.setAttribute('width', 0.4 * healthPercentage);
+            // Ajuste la position X de la barre pour qu'elle se réduise vers la gauche
+            // L'ancrage de la barre est au centre, donc pour qu'elle se réduise depuis la droite,
+            // il faut déplacer son centre vers la gauche.
+            healthBar.object3D.position.x = 0.7 - (0.4 * (1 - healthPercentage)) / 2; // Position Y et Z sont fixées
         }
 
-        // Vérifie si la condition de victoire est atteinte
-        function checkWinCondition() {
-            if (collectedCubes >= totalCubesToCollect) {
-                endGame("Félicitations, vous avez collecté tous les cubes !");
-            }
-        }
+        // --- Composant A-Frame pour le mouvement du joueur et la gestion de la manette ---
+        AFRAME.registerComponent('gamepad-movement', {
+            init: function() {
+                this.moveSpeed = 0.08; // Vitesse de déplacement du joueur ajustée pour le jeu de survie
+                this.moveForward = false;
+                this.moveBackward = false;
+                this.moveLeft = false;
+                this.moveRight = false;
+                this.gamepadConnected = false;
+                this.gamepadIndex = null;
+                this.gamepadButtonAPressed = false; // Pour gérer un seul "tir" par pression
 
-        // --- Contrôles Clavier (pour PC) ---
-        document.addEventListener('keydown', (event) => {
-            if (!gameRunning) return;
-            const key = event.key.toLowerCase();
-            switch (key) {
-                case 'z': // ZQSD (clavier français)
-                case 'w': // WASD (clavier anglais)
-                    moveForward = true;
-                    break;
-                case 's':
-                    moveBackward = true;
-                    break;
-                case 'q': // ZQSD
-                case 'a': // WASD
-                    moveLeft = true;
-                    break;
-                case 'd':
-                    moveRight = true;
-                    break;
-                case ' ': // Espace pour collecter
-                    // Simule un clic sur l'objet actuellement regardé par le curseur A-Frame
-                    const cursorEntity = document.querySelector('[cursor]');
-                    if (cursorEntity && cursorEntity.components.cursor) {
-                        const intersectedEl = cursorEntity.components.cursor.intersectedEl;
-                        // S'assure que l'objet est un cube et qu'il est toujours dans la scène
-                        if (intersectedEl && intersectedEl.parentNode === sceneEl && intersectedEl.tagName.toLowerCase() === 'a-box') {
-                            collectCube(intersectedEl); // Collecte le cube
-                        }
-                    }
-                    break;
-            }
-        });
+                // Cache les références aux entités pour une meilleure performance
+                this.headEl = document.querySelector('#head');
+                this.sceneEl = this.el.sceneEl; // Référence à la scène A-Frame
 
-        document.addEventListener('keyup', (event) => {
-            if (!gameRunning) return;
-            const key = event.key.toLowerCase();
-            switch (key) {
-                case 'z':
-                case 'w':
-                    moveForward = false;
-                    break;
-                case 's':
-                    moveBackward = false;
-                    break;
-                case 'q':
-                case 'a':
-                    moveLeft = false;
-                    break;
-                case 'd':
-                    moveRight = false;
-                    break;
-            }
-        });
+                // Écouteurs d'événements pour la connexion/déconnexion de la manette
+                window.addEventListener("gamepadconnected", (e) => {
+                    console.log("Manette connectée (composant):", e.gamepad.id);
+                    this.gamepadConnected = true;
+                    this.gamepadIndex = e.gamepad.index;
+                });
 
-        // --- Contrôles Manette (pour Mobile/PC en mode VR) ---
-        window.addEventListener("gamepadconnected", (event) => {
-            console.log("Manette connectée à l'index %d : %s. %d boutons, %d axes.",
-                event.gamepad.index, event.gamepad.id,
-                event.gamepad.buttons.length, event.gamepad.axes.length);
-            gamepadConnected = true;
-            gamepadIndex = event.gamepad.index;
-        });
+                window.addEventListener("gamepaddisconnected", (e) => {
+                    console.log("Manette déconnectée (composant):", e.gamepad.id);
+                    this.gamepadConnected = false;
+                    this.gamepadIndex = null;
+                });
 
-        window.addEventListener("gamepaddisconnected", (event) => {
-            console.log("Manette déconnectée de l'index %d : %s",
-                event.gamepad.index, event.gamepad.id);
-            gamepadConnected = false;
-            gamepadIndex = null;
-        });
-
-        // La boucle 'tick' d'A-Frame est parfaite pour les mises à jour continues comme le mouvement.
-        sceneEl.addEventListener('tick', () => {
-            if (!gameRunning) return;
-
-            // Récupère la position actuelle du 'cameraRig' (l'entité parente qui se déplace)
-            const currentPosition = cameraRig.object3D.position;
-            // Récupère la rotation de la tête (la caméra enfant) pour orienter le mouvement
-            const headRotation = head.object3D.rotation;
-
-            let deltaX = 0; // Déplacement latéral
-            let deltaZ = 0; // Déplacement avant/arrière
-
-            // Mouvement clavier (si des touches sont pressées)
-            if (moveForward) deltaZ -= moveSpeed;
-            if (moveBackward) deltaZ += moveSpeed;
-            if (moveLeft) deltaX -= moveSpeed;
-            if (moveRight) deltaX += moveSpeed;
-
-            // Mouvement manette (Joystick gauche)
-            if (gamepadConnected && gamepadIndex !== null) {
-                const gamepad = navigator.getGamepads()[gamepadIndex];
-                if (gamepad) {
-                    const lx = gamepad.axes[0]; // Axe X du joystick gauche (latéral)
-                    const ly = gamepad.axes[1]; // Axe Y du joystick gauche (avant/arrière)
-
-                    // *** LOG DE DEBUG POUR LE JOYSTICK GAUCHE ***
-                    // Vérifiez ces valeurs dans la console de votre navigateur (F12)
-                    // Elles devraient changer quand vous bougez le joystick.
-                    // Si elles restent à 0, le problème vient de la détection de la manette par le navigateur.
-                    // console.log(`Gamepad Left Stick: X=${lx.toFixed(2)}, Y=${ly.toFixed(2)}`);
-
-                    const deadzone = 0.1; // Zone morte pour éviter la dérive du joystick
-                    
-                    // Applique le mouvement du joystick gauche :
-                    // ly contrôle l'avant/arrière (deltaZ)
-                    // lx contrôle le mouvement latéral (deltaX)
-                    // Ces déplacements sont ensuite orientés par la tête
-                    if (Math.abs(lx) > deadzone) {
-                        deltaX += lx * moveSpeed;
-                    }
-                    if (Math.abs(ly) > deadzone) {
-                        deltaZ += ly * moveSpeed;
-                    }
-
-                    // Bouton A (index 0 pour la plupart des manettes Xbox) pour collecter
-                    // Assure qu'on ne "tire" qu'une seule fois par pression du bouton
-                    if (gamepad.buttons[0] && gamepad.buttons[0].pressed && !gamepadButtonAPressed) {
-                        gamepadButtonAPressed = true; // Marque le bouton comme pressé
-                        // Simule un clic sur l'objet actuellement regardé par le curseur
-                        const cursorEntity = document.querySelector('[cursor]');
-                        if (cursorEntity && cursorEntity.components.cursor) {
-                            const intersectedEl = cursorEntity.components.cursor.intersectedEl;
-                            // S'assure que l'objet est un cube et qu'il est toujours dans la scène
-                            if (intersectedEl && intersectedEl.parentNode === sceneEl && intersectedEl.tagName.toLowerCase() === 'a-box') {
-                                collectCube(intersectedEl); // Collecte le cube
+                // --- Écouteurs d'événements clavier (déplacés dans le composant) ---
+                document.addEventListener('keydown', (event) => {
+                    if (!gameRunning) return; // Ne pas traiter les entrées si le jeu n'est pas en cours
+                    const key = event.key.toLowerCase();
+                    switch (key) {
+                        case 'z': case 'w': this.moveForward = true; break;
+                        case 's': this.moveBackward = true; break;
+                        case 'q': case 'a': this.moveLeft = true; break;
+                        case 'd': this.moveRight = true; break;
+                        case ' ': // Espace pour "tirer" ou interagir (collecter)
+                            const cursorEntity = document.querySelector('[cursor]');
+                            if (cursorEntity && cursorEntity.components.cursor) {
+                                const intersectedEl = cursorEntity.components.cursor.intersectedEl;
+                                // Si on regarde un ennemi et qu'on "tire"
+                                if (intersectedEl && intersectedEl.parentNode === this.sceneEl && intersectedEl.components.enemy) {
+                                    score += 10; // Gagne des points en éliminant un ennemi
+                                    updateGameUI();
+                                    intersectedEl.components.enemy.handleCollision(); // Retire l'ennemi
+                                }
                             }
+                            break;
+                    }
+                });
+
+                document.addEventListener('keyup', (event) => {
+                    if (!gameRunning) return;
+                    const key = event.key.toLowerCase();
+                    switch (key) {
+                        case 'z': case 'w': this.moveForward = false; break;
+                        case 's': this.moveBackward = false; break;
+                        case 'q': case 'a': this.moveLeft = false; break;
+                        case 'd': this.moveRight = false; break;
+                    }
+                });
+            },
+
+            tick: function(time, deltaTime) {
+                if (!gameRunning) return; // Le mouvement ne fonctionne que si le jeu est actif
+
+                const currentPosition = this.el.object3D.position; // Position de l'entité cameraRig
+                const headRotation = this.headEl.object3D.rotation; // Rotation de la tête (caméra)
+
+                let deltaX = 0; // Déplacement latéral
+                let deltaZ = 0; // Déplacement avant/arrière
+
+                // Mouvement clavier
+                if (this.moveForward) deltaZ -= this.moveSpeed;
+                if (this.moveBackward) deltaZ += this.moveSpeed;
+                if (this.moveLeft) deltaX -= this.moveSpeed;
+                if (this.moveRight) deltaX += this.moveSpeed;
+
+                // Mouvement manette (Joystick gauche)
+                if (this.gamepadConnected && this.gamepadIndex !== null) {
+                    // Obtient l'état le plus récent de la manette
+                    const gamepads = navigator.getGamepads();
+                    const gamepad = gamepads[this.gamepadIndex];
+
+                    if (gamepad) {
+                        const lx = gamepad.axes[0]; // Axe X du joystick gauche
+                        const ly = gamepad.axes[1]; // Axe Y du joystick gauche
+
+                        const deadzone = 0.1; // Pour ignorer les petites dérives du joystick
+
+                        // Applique le mouvement du joystick gauche :
+                        // ly (axe Y) contrôle l'avant/arrière (deltaZ)
+                        // lx (axe X) contrôle le mouvement latéral (deltaX)
+                        // IMPORTANT : Inversion du signe pour ly afin de corriger la direction avant/arrière
+                        if (Math.abs(lx) > deadzone) {
+                            deltaX += lx * this.moveSpeed;
                         }
-                    } else if (gamepad.buttons[0] && !gamepad.buttons[0].pressed) {
-                        gamepadButtonAPressed = false; // Réinitialise quand le bouton est relâché
+                        if (Math.abs(ly) > deadzone) {
+                            deltaZ -= ly * this.moveSpeed; // <-- Inversion corrigée ici !
+                        }
+
+                        // Bouton A (index 0 pour la plupart des manettes Xbox) pour "tirer"
+                        // Le `!this.gamepadButtonAPressed` s'assure qu'un seul événement est déclenché par pression
+                        if (gamepad.buttons[0] && gamepad.buttons[0].pressed && !this.gamepadButtonAPressed) {
+                            this.gamepadButtonAPressed = true; // Marque le bouton comme pressé
+                            // Simule un "clic" sur l'objet actuellement regardé par le curseur A-Frame
+                            const cursorEntity = document.querySelector('[cursor]');
+                            if (cursorEntity && cursorEntity.components.cursor) {
+                                const intersectedEl = cursorEntity.components.cursor.intersectedEl;
+                                // Si on regarde un ennemi et qu'on "tirer"
+                                if (intersectedEl && intersectedEl.parentNode === this.sceneEl && intersectedEl.components.enemy) {
+                                    score += 10; // Gagne des points en éliminant un ennemi
+                                    updateGameUI();
+                                    intersectedEl.components.enemy.handleCollision(); // Retire l'ennemi
+                                }
+                            }
+                        } else if (gamepad.buttons[0] && !gamepad.buttons[0].pressed) {
+                            this.gamepadButtonAPressed = false; // Réinitialise quand le bouton est relâché
+                        }
                     }
                 }
+
+                // Applique le mouvement au 'cameraRig' en fonction de l'orientation de la tête.
+                const forwardVector = new THREE.Vector3(0, 0, -1); // Vecteur "avant" local
+                forwardVector.applyEuler(headRotation); // Oriente le vecteur par la rotation de la tête
+
+                const rightVector = new THREE.Vector3(1, 0, 0); // Vecteur "droite" local
+                rightVector.applyEuler(headRotation); // Oriente le vecteur par la rotation de la tête
+
+                // Applique les déplacements calculés à la position du cameraRig
+                currentPosition.x += forwardVector.x * deltaZ + rightVector.x * deltaX;
+                currentPosition.z += forwardVector.z * deltaZ + rightVector.z * deltaX;
+                // La position Y (hauteur) reste fixe (1.6m) car le cameraRig ne gère pas la gravité ni le saut.
             }
-
-            // Applique le mouvement au 'cameraRig' en fonction de l'orientation de la tête.
-            // Cela permet d'avancer/reculer dans la direction où la tête regarde,
-            // et de strafer (déplacement latéral) par rapport à cette direction.
-            // On utilise la bibliothèque THREE.js intégrée à A-Frame pour la manipulation des vecteurs.
-            const forwardVector = new THREE.Vector3(0, 0, -1); // Vecteur "avant" local
-            forwardVector.applyEuler(headRotation); // Oriente le vecteur par la rotation de la tête
-
-            const rightVector = new THREE.Vector3(1, 0, 0); // Vecteur "droite" local
-            rightVector.applyEuler(headRotation); // Oriente le vecteur par la rotation de la tête
-
-            // Applique les déplacements calculés au cameraRig
-            currentPosition.x += forwardVector.x * deltaZ + rightVector.x * deltaX;
-            currentPosition.z += forwardVector.z * deltaZ + rightVector.z * deltaX;
-            // La position Y (hauteur) reste fixe à 1.6 par défaut sur la caméra, le cameraRig ne la gère pas
-            // pour éviter de tomber ou de voler sauf si on ajoute une logique de gravité ou de saut.
         });
+
+        // --- NOUVEAU COMPOSANT A-FRAME POUR LE COMPORTEMENT DES ENNEMIS ---
+        AFRAME.registerComponent('enemy', {
+            schema: {
+                speed: {type: 'number', default: 0.03} // Vitesse à laquelle l'ennemi se déplace vers le joueur
+            },
+            init: function() {
+                this.playerEl = document.querySelector('#cameraRig');
+                this.sceneEl = this.el.sceneEl;
+                this.alive = true; // Drapeaux pour s'assurer que l'ennemi est traité une seule fois lors de la collision
+            },
+            tick: function(time, deltaTime) {
+                if (!gameRunning || !this.alive) return;
+
+                const enemyPosition = this.el.object3D.position;
+                const playerPosition = this.playerEl.object3D.position;
+
+                // Calcule le vecteur de direction de l'ennemi vers le joueur
+                const direction = new THREE.Vector3();
+                direction.subVectors(playerPosition, enemyPosition).normalize();
+
+                // Déplace l'ennemi vers le joueur
+                enemyPosition.add(direction.multiplyScalar(this.data.speed));
+
+                // Vérifie la collision avec le joueur (simple vérification de distance)
+                const distance = enemyPosition.distanceTo(playerPosition);
+                const collisionThreshold = 0.8; // Seuil de collision (ajustez en fonction de la taille du modèle)
+
+                if (distance < collisionThreshold) {
+                    this.handleCollision();
+                }
+            },
+            handleCollision: function() {
+                if (!this.alive) return; // Évite les collisions multiples avec le même ennemi
+                this.alive = false; // Marque l'ennemi comme "non vivant"
+
+                // Réduit la vie du joueur
+                playerHealth -= 10;
+                updateGameUI();
+                console.log(`Le joueur a été touché ! Vie: ${playerHealth}`);
+
+                // Supprime l'ennemi de la scène
+                if (this.el.parentNode) {
+                    this.el.parentNode.removeChild(this.el);
+                    // Supprime l'ennemi du tableau de suivi
+                    enemyEntities = enemyEntities.filter(ent => ent !== this.el); 
+                }
+
+                // Vérifie si le jeu est terminé
+                if (playerHealth <= 0) {
+                    endGame("GAME OVER ! Votre vie est tombée à zéro.");
+                } else if (enemyEntities.length === 0 && enemiesSpawned >= totalEnemiesToSpawn) {
+                    // Condition de victoire si tous les ennemis sont éliminés
+                    endGame("Vous avez survécu à la première vague ! Bravo !");
+                }
+            }
+        });
+
 
         // --- Initialisation et Permissions ---
 
         // Script pour la demande de permission d'orientation des capteurs (iOS/Android)
-        // Ce script est placé ici pour s'assurer qu'il s'exécute après le chargement du DOM
-        // et qu'il est déclenché par une interaction utilisateur (un clic sur la page).
         window.addEventListener('click', function requestDeviceOrientationOnce() {
-            window.removeEventListener('click', requestDeviceOrientationOnce); // Supprime l'écouteur après le premier clic
+            window.removeEventListener('click', requestDeviceOrientationOnce);
             if (typeof DeviceOrientationEvent !== 'undefined' &&
                 typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission()
@@ -509,12 +540,12 @@
                     })
                     .catch(console.error);
             }
-        }, { once: true }); // Permet à l'écouteur de se déclencher une seule fois
+        }, { once: true });
 
 
         // Message initial au chargement de la page
         window.onload = function() {
-            showMessageBox("Bienvenue au jeu de collecte de cubes VR ! Appuyez sur 'Entrer en Mode VR / Démarrer le Jeu' pour commencer.");
+            console.log("Bienvenue au jeu de survie VR ! Appuyez sur 'Entrer en Mode VR / Démarrer le Jeu' pour commencer.");
             updateGameUI(); // Initialise l'affichage de l'interface
         };
     </script>
