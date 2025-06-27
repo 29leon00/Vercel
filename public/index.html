@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Combat VR - Cardboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
+    <script src="vr-game.js" defer></script>
+    <style> body { margin: 0; } </style>
+  </head>
+  <body>
+    <a-scene vr-mode-ui="enabled: true" embedded>
+      <a-assets>
+        <audio id="shoot-sound" src="assets/sounds/shoot.mp3"></audio>
+        <audio id="explosion-sound" src="assets/sounds/explosion.mp3"></audio>
+      </a-assets>
+
+      <!-- Joueur -->
+      <a-entity id="player" position="0 1.6 0">
+        <a-camera id="camera" wasd-controls="enabled: false" look-controls></a-camera>
+      </a-entity>
+
+      <!-- Terrain -->
+      <a-plane rotation="-90 0 0" width="50" height="50" color="#444"></a-plane>
+
+      <!-- Mini-carte dans l’espace -->
+      <a-plane id="minimap" position="0 2 -2" width="0.8" height="0.8" color="#111" material="opacity: 0.5"></a-plane>
+
+      <!-- Lumière -->
+      <a-light type="ambient" intensity="0.8"></a-light>
+      <a-light type="directional" position="1 3 1" intensity="1"></a-light>
+    </a-scene>
+  </body>
+</html>
