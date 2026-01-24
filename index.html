@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Material VR OS - Hand Tracking</title>
+    <title>Material VR OS - Stable Hand-Tracking</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -13,65 +13,57 @@
 </head>
 <body>
 
-    <a-scene background="color: #121212" renderer="antialias: true">
+    <a-scene background="color: #0d0d0d" renderer="antialias: true; colorManagement: true">
         <a-assets>
-            <a-mixin id="card" geometry="primitive: plane; width: 1.2; height: 0.8" material="color: #1e1e1e; shader: flat; transparent: true; opacity: 0.95"></a-mixin>
-            <a-mixin id="btn" geometry="primitive: plane; width: 0.25; height: 0.1" material="color: #3700B3; shader: flat"></a-mixin>
+            <a-mixin id="panel" geometry="primitive: plane; width: 1.4; height: 0.9" material="color: #121212; opacity: 0.95; transparent: true; shader: flat"></a-mixin>
+            <a-mixin id="button" geometry="primitive: plane; width: 0.3; height: 0.12" material="color: #3700B3; shader: flat"></a-mixin>
         </a-assets>
 
-        <a-entity id="home-screen" position="0 1.4 -1.2">
-            <a-text value="VR DASHBOARD" align="center" position="0 0.5 0" width="3" font="roboto"></a-text>
+        <a-entity id="screen-home" position="0 1.4 -1.2">
+            <a-text value="G-OS VIRTUAL" align="center" position="0 0.5 0" width="4" font="roboto"></a-text>
             
-            <a-entity id="btn-music" position="-0.4 0 0.01" class="clickable">
-                <a-plane width="0.3" height="0.3" color="#BB86FC" radius="0.02"></a-plane>
+            <a-entity id="btn-music" position="-0.4 0 0.02" class="clickable">
+                <a-plane width="0.3" height="0.3" color="#BB86FC" radius="0.05"></a-plane>
                 <a-text value="MUSIC" align="center" position="0 -0.25 0" width="2"></a-text>
             </a-entity>
 
-            <a-entity id="btn-web" position="0 0 0.01" class="clickable">
-                <a-plane width="0.3" height="0.3" color="#03DAC6" radius="0.02"></a-plane>
-                <a-text value="BROWSER" align="center" position="0 -0.25 0" width="2"></a-text>
-            </a-entity>
-
-            <a-entity id="btn-settings" position="0.4 0 0.01" class="clickable">
-                <a-plane width="0.3" height="0.3" color="#CF6679" radius="0.02"></a-plane>
-                <a-text value="SETTINGS" align="center" position="0 -0.25 0" width="2"></a-text>
+            <a-entity id="btn-browser" position="0.4 0 0.02" class="clickable">
+                <a-plane width="0.3" height="0.3" color="#03DAC6" radius="0.05"></a-plane>
+                <a-text value="WEB" align="center" position="0 -0.25 0" width="2"></a-text>
             </a-entity>
         </a-entity>
 
-        <a-entity id="app-music" position="0 1.4 -1.1" visible="false">
-            <a-entity mixin="card"></a-entity>
-            <a-text id="music-status" value="PAUSED" align="center" position="0 0.25 0.01" width="3" color="#BB86FC"></a-text>
-            <a-text value="Now Playing: Lo-Fi Beats" align="center" position="0 0.1 0.01" width="2"></a-text>
+        <a-entity id="screen-web" position="0 1.4 -1.1" visible="false">
+            <a-mixin id="web-panel" mixin="panel"></a-mixin>
+            <a-plane width="1.3" height="0.1" color="#333" position="0 0.35 0.01">
+                <a-text id="url-bar" value="https://wikipedia.org" position="-0.6 0 0.01" width="2"></a-text>
+            </a-plane>
+            <a-plane width="1.3" height="0.6" color="#FFF" position="0 -0.05 0.01">
+                <a-text value="Navigateur Actif\nContenu Web Securise" color="#000" align="center" width="2.5"></a-text>
+            </a-plane>
+            <a-entity id="web-back" position="0 -0.4 0.05" class="clickable">
+                <a-text value="RETOUR" align="center" width="2"></a-text>
+            </a-entity>
+        </a-entity>
+
+        <a-entity id="screen-music" position="0 1.4 -1.1" visible="false">
+            <a-entity mixin="panel"></a-entity>
+            <a-text id="track-name" value="Lofi Hip Hop - Study Beats" align="center" position="0 0.2 0.02" width="2.5"></a-text>
             
-            <a-plane id="music-bar" width="0.8" height="0.02" color="#333" position="0 -0.05 0.01">
-                <a-plane id="music-progress" width="0.1" height="0.02" color="#BB86FC" position="-0.35 0 0.01"></a-plane>
+            <a-plane id="progress-bg" width="0.8" height="0.02" color="#333" position="0 0 0.02">
+                <a-plane id="progress-fill" width="0.1" height="0.02" color="#BB86FC" position="-0.35 0 0.01"></a-plane>
             </a-plane>
 
-            <a-entity id="ctrl-play" position="0 -0.2 0.01" class="clickable">
-                <a-plane width="0.2" height="0.1" color="#3700B3"></a-plane>
-                <a-text id="play-text" value="PLAY" align="center" width="2"></a-text>
+            <a-entity id="play-pause" position="0 -0.2 0.05" class="clickable">
+                <a-plane mixin="button" color="#6200EE"></a-plane>
+                <a-text id="play-label" value="PAUSE" align="center" width="2"></a-text>
             </a-entity>
-            
-            <a-entity id="music-back" position="0 -0.35 0.01" class="clickable">
-                <a-text value="< BACK" align="center" width="1.5"></a-text>
-            </a-entity>
-        </a-entity>
-
-        <a-entity id="app-settings" position="0 1.4 -1.1" visible="false">
-            <a-entity mixin="card"></a-entity>
-            <a-text value="SETTINGS" align="center" position="0 0.3 0.01" width="3"></a-text>
-            
-            <a-text value="VOLUME" position="-0.4 0.1 0.01" width="2"></a-text>
-            <a-plane width="0.5" height="0.02" color="#333" position="0.1 0.1 0.01">
-                <a-plane id="vol-slider" width="0.4" height="0.03" color="#03DAC6" position="-0.05 0 0.01"></a-plane>
-            </a-plane>
-
-            <a-entity id="settings-back" position="0 -0.3 0.01" class="clickable">
-                <a-text value="EXIT" align="center" width="1.5"></a-text>
+            <a-entity id="music-back" position="0 -0.4 0.05" class="clickable">
+                <a-text value="RETOUR" align="center" width="2"></a-text>
             </a-entity>
         </a-entity>
 
-        <a-sphere id="hand-cursor" radius="0.015" color="#00FF00"></a-sphere>
+        <a-sphere id="hand-cursor" radius="0.015" color="#00FF00" material="emissive: #00FF00; emissiveIntensity: 2"></a-sphere>
 
         <a-entity id="rig"><a-camera look-controls wasd-controls-enabled="false"></a-camera></a-entity>
     </a-scene>
@@ -80,104 +72,98 @@
 
     <script>
         const cursor = document.getElementById('hand-cursor');
-        const home = document.getElementById('home-screen');
-        const appMusic = document.getElementById('app-music');
-        const appSettings = document.getElementById('app-settings');
-        const musicStatus = document.getElementById('music-status');
-        const playText = document.getElementById('play-text');
-        const musicProgress = document.getElementById('music-progress');
-        
-        let isMirror = true;
-        let isPlaying = false;
-        let progress = 0;
-        let currentApp = "home";
+        const screens = { home: document.getElementById('screen-home'), music: document.getElementById('screen-music'), web: document.getElementById('screen-web') };
+        const progressFill = document.getElementById('progress-fill');
+        const playLabel = document.getElementById('play-label');
 
-        // --- IA Hands ---
+        let currentScreen = "home";
+        let isMirror = true;
+        let isPlaying = true;
+        let musicProgress = 0;
+
+        // Variables de stabilisation (Lissage/Lerp)
+        let targetX = 0, targetY = 1.4;
+        let currentX = 0, currentY = 1.4;
+        const smoothing = 0.15; // Plus c'est bas, plus c'est fluide mais lent
+
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
         hands.setOptions({maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8});
 
         hands.onResults((results) => {
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const hand = results.multiHandLandmarks[0];
-                const index = hand[8];
-                const thumb = hand[4];
+                const landmark = results.multiHandLandmarks[0][8]; // Index
+                const thumb = results.multiHandLandmarks[0][4]; // Pouce
 
-                let x = isMirror ? (0.5 - index.x) * 2.5 : (index.x - 0.5) * 2.5;
-                let y = -(index.y - 0.5) * 1.5 + 1.25; 
-                
-                cursor.setAttribute('position', `${x} ${y} -0.9`);
+                // Calcul de la cible
+                targetX = isMirror ? (0.5 - landmark.x) * 2.5 : (landmark.x - 0.5) * 2.5;
+                targetY = -(landmark.y - 0.5) * 1.8 + 1.25;
+
+                // Application du lissage (Lerp)
+                currentX += (targetX - currentX) * smoothing;
+                currentY += (targetY - currentY) * smoothing;
+
+                cursor.setAttribute('position', `${currentX} ${currentY} -0.95`);
                 cursor.setAttribute('visible', 'true');
 
-                const dist = Math.hypot(index.x - thumb.x, index.y - thumb.y);
+                // Pincement (Click)
+                const dist = Math.hypot(landmark.x - thumb.x, landmark.y - thumb.y);
                 if (dist < 0.05) {
-                    cursor.setAttribute('color', 'red');
-                    handleInteraction(x, y);
+                    cursor.setAttribute('color', '#FF0000');
+                    processClick(currentX, currentY);
                 } else {
-                    cursor.setAttribute('color', 'green');
-                    lastClick = 0; // Reset debounce
+                    cursor.setAttribute('color', '#00FF00');
+                    clickLocked = false;
                 }
             } else {
                 cursor.setAttribute('visible', 'false');
             }
         });
 
-        let lastClick = 0;
-        function handleInteraction(x, y) {
-            const now = Date.now();
-            if (now - lastClick < 500) return; // Debounce
-            
-            if (currentApp === "home") {
+        let clickLocked = false;
+        function processClick(x, y) {
+            if (clickLocked) return;
+            clickLocked = true;
+
+            if (currentScreen === "home") {
                 if (y > 1.2 && y < 1.6) {
-                    if (x < -0.25) openApp("music");
-                    else if (x > 0.25) openApp("settings");
+                    if (x < -0.2) switchScreen("music");
+                    if (x > 0.2) switchScreen("web");
                 }
-            } else if (currentApp === "music") {
-                if (y > 1.15 && y < 1.3 && Math.abs(x) < 0.15) toggleMusic();
-                if (y < 1.1 && Math.abs(x) < 0.2) openApp("home");
-            } else if (currentApp === "settings") {
-                if (y < 1.2 && Math.abs(x) < 0.2) openApp("home");
+            } else {
+                if (y < 1.1) switchScreen("home"); // Boutons Retour
+                if (currentScreen === "music" && y > 1.1 && y < 1.3) {
+                    isPlaying = !isPlaying;
+                    playLabel.setAttribute('value', isPlaying ? "PAUSE" : "PLAY");
+                }
             }
-            lastClick = now;
         }
 
-        function openApp(id) {
-            home.setAttribute('visible', id === "home");
-            appMusic.setAttribute('visible', id === "music");
-            appSettings.setAttribute('visible', id === "settings");
-            currentApp = id;
+        function switchScreen(id) {
+            Object.keys(screens).forEach(k => screens[k].setAttribute('visible', k === id));
+            currentScreen = id;
         }
 
-        function toggleMusic() {
-            isPlaying = !isPlaying;
-            musicStatus.setAttribute('value', isPlaying ? "PLAYING" : "PAUSED");
-            playText.setAttribute('value', isPlaying ? "PAUSE" : "PLAY");
-        }
-
-        // Simuler la progression
+        // Animation musique
         setInterval(() => {
-            if (isPlaying && progress < 100) {
-                progress += 0.5;
-                if (progress >= 100) progress = 0;
-                musicProgress.setAttribute('width', (progress/100) * 0.8);
-                musicProgress.setAttribute('position', `${-0.4 + (progress/100)*0.4} 0 0.01`);
+            if (isPlaying && currentScreen === "music") {
+                musicProgress = (musicProgress + 0.2) % 100;
+                progressFill.setAttribute('width', (musicProgress / 100) * 0.8);
+                progressFill.setAttribute('position', `${-0.4 + (musicProgress/100)*0.4} 0 0.01`);
             }
-        }, 100);
+        }, 50);
 
-        // --- Camera & Mirror Detection ---
-        async function init() {
+        async function start() {
             const stream = await navigator.mediaDevices.getUserMedia({video: { facingMode: "environment" }});
             const settings = stream.getVideoTracks()[0].getSettings();
             isMirror = (settings.facingMode === 'user' || !settings.facingMode);
-            
-            const videoElement = document.getElementById('input_video');
-            videoElement.srcObject = stream;
-            const camera = new Camera(videoElement, {
-                onFrame: async () => { await hands.send({image: videoElement}); },
+            document.getElementById('input_video').srcObject = stream;
+            const cam = new Camera(document.getElementById('input_video'), {
+                onFrame: async () => { await hands.send({image: document.getElementById('input_video')}); },
                 width: 1280, height: 720
             });
-            camera.start();
+            cam.start();
         }
-        init();
+        start();
     </script>
 </body>
 </html>
