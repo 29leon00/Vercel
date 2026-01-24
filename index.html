@@ -2,54 +2,37 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>VR OS - Hand Tracking Interface</title>
+    <title>VR OS - Mirror Fixed</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 </head>
-<body style="margin: 0; overflow: hidden;">
+<body style="margin: 0; overflow: hidden; background: #000;">
 
-    <a-scene background="color: #050505" vr-mode-ui="enabled: true">
+    <a-scene background="color: #050505">
         <a-assets>
-            <a-mixin id="app-icon" geometry="primitive: plane; width: 0.3; height: 0.3" material="color: #444; shader: flat"></a-mixin>
-            <a-mixin id="hover-effect" material="color: #00FF00"></a-mixin>
+            <a-mixin id="app-icon" geometry="primitive: plane; width: 0.3; height: 0.3" material="color: #333; shader: flat"></a-mixin>
         </a-assets>
 
         <a-entity id="main-menu" position="0 1.4 -1.2">
-            <a-text value="APPLICATIONS" align="center" position="0 0.5 0" width="3"></a-text>
-            
-            <a-entity id="app-music" class="app-btn" mixin="app-icon" position="-0.4 0.1 0">
+            <a-text value="VR DASHBOARD" align="center" position="0 0.5 0" width="3"></a-text>
+            <a-entity id="btn-1" class="app-btn" mixin="app-icon" position="-0.4 0.1 0">
                 <a-text value="MUSIC" align="center" position="0 -0.25 0" width="1.5"></a-text>
-                <a-box scale="0.1 0.1 0.1" color="red"></a-box>
+                <a-box scale="0.1 0.1 0.1" color="#FF4444"></a-box>
             </a-entity>
-
-            <a-entity id="app-weather" class="app-btn" mixin="app-icon" position="0 0.1 0">
-                <a-text value="WEATHER" align="center" position="0 -0.25 0" width="1.5"></a-text>
-                <a-sphere scale="0.08 0.08 0.08" color="yellow"></a-sphere>
+            <a-entity id="btn-2" class="app-btn" mixin="app-icon" position="0 0.1 0">
+                <a-text value="PHOTO" align="center" position="0 -0.25 0" width="1.5"></a-text>
+                <a-sphere scale="0.08 0.08 0.08" color="#44FF44"></a-sphere>
             </a-entity>
-
-            <a-entity id="app-settings" class="app-btn" mixin="app-icon" position="0.4 0.1 0">
-                <a-text value="SETTINGS" align="center" position="0 -0.25 0" width="1.5"></a-text>
-                <a-torus scale="0.06 0.06 0.06" color="blue"></a-torus>
+            <a-entity id="btn-3" class="app-btn" mixin="app-icon" position="0.4 0.1 0">
+                <a-text value="WEB" align="center" position="0 -0.25 0" width="1.5"></a-text>
+                <a-torus scale="0.06 0.06 0.06" color="#4444FF"></a-torus>
             </a-entity>
-        </a-entity>
-
-        <a-entity id="app-page" position="0 1.4 -1.1" visible="false">
-            <a-plane width="1" height="0.7" color="#111">
-                <a-text id="app-title" value="App Name" align="center" position="0 0.25 0.01" width="3"></a-text>
-                <a-text id="app-content" value="Contenu de l'application..." align="center" position="0 0 0.01" width="2"></a-text>
-                
-                <a-entity id="back-btn" mixin="app-icon" position="0 -0.2 0.02" scale="0.5 0.5 1" material="color: #666">
-                    <a-text value="RETOUR" align="center" width="2.5"></a-text>
-                </a-entity>
-            </a-plane>
         </a-entity>
 
         <a-sphere id="hand-cursor" radius="0.015" color="#00FF00"></a-sphere>
 
-        <a-entity id="rig" position="0 0 0">
-            <a-camera look-controls wasd-controls-enabled="false"></a-camera>
-        </a-entity>
+        <a-entity id="rig"><a-camera look-controls wasd-controls-enabled="false"></a-camera></a-entity>
     </a-scene>
 
     <video id="input_video" style="display:none;"></video>
@@ -57,11 +40,7 @@
     <script>
         const videoElement = document.getElementById('input_video');
         const cursor = document.getElementById('hand-cursor');
-        const mainMenu = document.getElementById('main-menu');
-        const appPage = document.getElementById('app-page');
-        const appTitle = document.getElementById('app-title');
-        
-        let currentScreen = "menu";
+        let isMirror = true; // Par défaut en mode miroir (PC)
 
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
         hands.setOptions({maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8, minTrackingConfidence: 0.8});
@@ -72,59 +51,57 @@
                 const index = hand[8];
                 const thumb = hand[4];
 
-                // AJUSTEMENT CURSEUR (Plus bas et plus centré)
-                const x = (index.x - 0.5) * 2;
-                const y = -(index.y - 0.5) * 1.5 + 1.25; // Abaissé pour Cardboard
+                // LOGIQUE D'INVERSION X : 
+                // Si isMirror est vrai, on fait (0.5 - index.x)
+                // Si isMirror est faux (cam arrière), on fait (index.x - 0.5)
+                let x;
+                if (isMirror) {
+                    x = (0.5 - index.x) * 2.5; // Mode PC / Selfie
+                } else {
+                    x = (index.x - 0.5) * 2.5; // Mode Caméra Arrière
+                }
+
+                const y = -(index.y - 0.5) * 1.5 + 1.25; 
                 const z = -0.9;
 
                 cursor.setAttribute('position', `${x} ${y} ${z}`);
                 cursor.setAttribute('visible', 'true');
 
                 const dist = Math.hypot(index.x - thumb.x, index.y - thumb.y);
-                const isPinching = dist < 0.05;
-
-                if (isPinching) {
-                    cursor.setAttribute('color', 'red');
-                    checkClick(x, y);
-                } else {
-                    cursor.setAttribute('color', 'green');
-                }
+                cursor.setAttribute('color', dist < 0.05 ? "red" : "green");
             } else {
                 cursor.setAttribute('visible', 'false');
             }
         });
 
-        function checkClick(x, y) {
-            if (currentScreen === "menu") {
-                // Détection clics menu (très simplifié par coordonnées)
-                if (y > 1.3 && y < 1.7) {
-                    if (x < -0.2) openApp("MUSIQUE", "Lecture en cours...");
-                    else if (x > -0.2 && x < 0.2) openApp("METEO", "22°C - Ensoleillé");
-                    else if (x > 0.2) openApp("SETTINGS", "Volume: 80%\nWiFi: OK");
-                }
-            } else {
-                // Bouton retour
-                if (y > 1.1 && y < 1.3 && Math.abs(x) < 0.2) {
-                    currentScreen = "menu";
-                    mainMenu.setAttribute('visible', 'true');
-                    appPage.setAttribute('visible', 'false');
-                }
+        // Détection automatique de la caméra
+        const constraints = {
+            video: { facingMode: "environment" } // Tente l'arrière d'abord
+        };
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                videoElement.srcObject = stream;
+                
+                // On vérifie quelle caméra a été activée
+                const track = stream.getVideoTracks()[0];
+                const settings = track.getSettings();
+                
+                // Si facingMode est 'user' ou si on est sur un PC (pas de facingMode), on active le miroir
+                isMirror = (settings.facingMode === 'user' || !settings.facingMode);
+                
+                const camera = new Camera(videoElement, {
+                    onFrame: async () => { await hands.send({image: videoElement}); },
+                    width: 1280, height: 720
+                });
+                camera.start();
+            } catch (err) {
+                console.error("Erreur caméra: ", err);
             }
         }
 
-        function openApp(name, content) {
-            currentScreen = "app";
-            appTitle.setAttribute('value', name);
-            document.getElementById('app-content').setAttribute('value', content);
-            mainMenu.setAttribute('visible', 'false');
-            appPage.setAttribute('visible', 'true');
-        }
-
-        const camera = new Camera(videoElement, {
-            onFrame: async () => { await hands.send({image: videoElement}); },
-            facingMode: "environment", width: 1280, height: 720
-        });
-        camera.start();
+        startCamera();
     </script>
 </body>
 </html>
