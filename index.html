@@ -1,20 +1,72 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-    <meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover' />
-    <meta charset='utf-8'>
-    <link rel="stylesheet" type="text/css" href="styles.css">
-    <link rel="manifest" href="manifest.json">
-    <style></style>
-    <title>VR</title>
-    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
-    <script src="files/assets/237947832/1/webxr-polyfill.min.js"></script>
-    <script src="files/assets/237947827/1/webxr-polyfill-patch.js"></script>
-    <script src="playcanvas-stable.min.js"></script>
-    <script src="__settings__.js"></script>
+    <meta charset="utf-8">
+    <title>VR Hand Tracking - Cardboard</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 </head>
-<body>
-    <script src="__start__.js"></script>
-    <script src="__loading__.js"></script>
+<body style="margin: 0; overflow: hidden;">
+
+    <a-scene vr-mode-ui="enabled: true">
+        <a-entity id="rig" position="0 1.6 0">
+            <a-camera id="camera" look-controls></a-camera>
+        </a-entity>
+
+        <a-sphere id="hand-pointer" radius="0.05" color="red" position="0 1.6 -1"></a-sphere>
+
+        <a-sky color="#ECECEC"></a-sky>
+    </a-scene>
+
+    <video id="input_video" style="display:none;"></video>
+
+    <script>
+        const videoElement = document.getElementById('input_video');
+        const pointer = document.getElementById('hand-pointer');
+
+        // Configuration de la détection de main
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        // Fonction qui s'exécute à chaque détection de main
+        hands.onResults((results) => {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const hand = results.multiHandLandmarks[0];
+                
+                // On récupère l'index (point n°8 dans MediaPipe)
+                const indexFinger = hand[8];
+
+                // Conversion des coordonnées normalisées (0 à 1) en coordonnées 3D
+                // On inverse le X car la vidéo est souvent en miroir
+                const x = (indexFinger.x - 0.5) * 2; 
+                const y = -(indexFinger.y - 0.5) * 2 + 1.5; 
+                const z = -1; // Distance devant la caméra
+
+                pointer.setAttribute('position', `${x} ${y} ${z}`);
+                pointer.setAttribute('visible', 'true');
+            } else {
+                pointer.setAttribute('visible', 'false');
+            }
+        });
+
+        // Lancement de la caméra
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 640,
+            height: 480
+        });
+        camera.start();
+    </script>
 </body>
 </html>
