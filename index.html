@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>VR Hand Tracking - Caméra Arrière</title>
+    <title>Environnement VR Interactif - Cardboard</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -10,27 +10,64 @@
         body { margin: 0; overflow: hidden; }
         #input_video { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            object-fit: cover; z-index: -1; transform: scaleX(1); /* Pas d'effet miroir pour la cam arrière */
+            object-fit: cover; z-index: -1; transform: scaleX(1); 
         }
-        #ui { position: absolute; bottom: 20px; width: 100%; text-align: center; color: white; font-family: sans-serif; z-index: 10; }
+        #ui { position: absolute; bottom: 20px; width: 100%; text-align: center; color: white; font-family: sans-serif; z-index: 10; text-shadow: 1px 1px 2px black;}
     </style>
 </head>
 <body>
-    <div id="ui">Visez votre main avec la caméra arrière</div>
+    <div id="ui">
+        Visez votre main avec la caméra arrière.<br>
+        Pincez le cube pour le déplacer !
+    </div>
     <video id="input_video" autoplay playsinline></video>
 
-    <a-scene vr-mode-ui="enabled: true">
-        <a-sphere id="hand-cursor" radius="0.06" color="red"></a-sphere>
-        
-        <a-box id="target-box" position="0 1.5 -2" color="#4CC3D9"></a-box>
+    <a-scene 
+        vr-mode-ui="enabled: true" 
+        device-orientation-permission-ui="enabled: true"
+        renderer="colorManagement: true; antialias: true;"
+        fog="type: exponential; color: #aaa; density: 0.1;"
+    >
+        <a-assets>
+            <img id="skyTexture" src="https://cdn.aframe.io/360-image-gallery-assets/images/sechelt.jpg" crossorigin="anonymous">
+            <img id="groundTexture" src="https://cdn.aframe.io/a-saturday-night/img/grid.png" crossorigin="anonymous">
+        </a-assets>
 
-        <a-sky opacity="0"></a-sky> <a-entity camera look-controls position="0 1.6 0"></a-entity>
+        <a-plane src="#groundTexture" rotation="-90 0 0" width="10" height="10" 
+                 repeat="10 10" color="#7BC8A4"></a-plane>
+
+        <a-entity position="-3 0 -3">
+            <a-cylinder color="#8B4513" height="2" radius="0.1"></a-cylinder>
+            <a-sphere color="#228B22" radius="0.8" position="0 1.5 0"></a-sphere>
+        </a-entity>
+        <a-entity position="3 0 -4">
+            <a-cylinder color="#8B4513" height="2.5" radius="0.15"></a-cylinder>
+            <a-sphere color="#228B22" radius="1" position="0 2 0"></a-sphere>
+        </a-entity>
+        <a-entity position="1 0 3">
+            <a-cylinder color="#8B4513" height="1.8" radius="0.08"></a-cylinder>
+            <a-sphere color="#228B22" radius="0.7" position="0 1.3 0"></a-sphere>
+        </a-entity>
+
+        <a-sky src="#skyTexture" rotation="0 -130 0"></a-sky>
+
+        <a-sphere id="hand-cursor" radius="0.06" color="red" emissive="red" emissiveIntensity="0.5"></a-sphere>
+        
+        <a-box id="target-box" position="0 1.5 -2" color="#4CC3D9"
+               animation="property: rotation; to: 0 360 0; loop: true; dur: 8000; easing: linear"></a-box>
+
+        <a-light type="ambient" color="#BBB"></a-light>
+        <a-light type="directional" intensity="0.6" position="1 1 -1"></a-light>
+
+        <a-entity camera look-controls="enabled: true" position="0 1.6 0"></a-entity>
     </a-scene>
 
     <script>
         const videoElement = document.getElementById('input_video');
         const cursor = document.getElementById('hand-cursor');
         const box = document.getElementById('target-box');
+
+        let isPinching = false; // Pour savoir si le cube est attrapé
 
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -49,10 +86,12 @@
                 const indexTip = landmarks[8]; // Bout de l'index
                 const thumbTip = landmarks[4]; // Bout du pouce
 
-                // Conversion coordonnées (Inversion X supprimée car caméra arrière)
+                // Coordonnées pour le curseur
                 const x = (indexTip.x - 0.5) * 4; 
                 const y = -(indexTip.y - 0.5) * 3 + 1.5;
-                cursor.setAttribute('position', `${x} ${y} -1.5`);
+                const z = -1.5; // Profondeur du curseur devant la caméra
+
+                cursor.setAttribute('position', `${x} ${y} ${z}`);
                 cursor.setAttribute('visible', 'true');
 
                 // --- DÉTECTION DU PINCH ---
@@ -62,18 +101,26 @@
                 );
 
                 if (distance < 0.06) { // Seuil du pincement
-                    cursor.setAttribute('color', 'green');
-                    cursor.setAttribute('scale', '1.5 1.5 1.5');
-                    box.setAttribute('color', 'yellow');
-                    // Optionnel : faire suivre le cube
-                    // box.setAttribute('position', `${x} ${y} -2`);
+                    if (!isPinching) { // Début du pincement
+                        cursor.setAttribute('color', 'green');
+                        cursor.setAttribute('scale', '1.2 1.2 1.2');
+                        box.setAttribute('color', 'orange');
+                        isPinching = true;
+                    }
+                    // Quand on pince, le cube suit le curseur
+                    box.setAttribute('position', `${x} ${y} ${z}`);
+
                 } else {
-                    cursor.setAttribute('color', 'red');
-                    cursor.setAttribute('scale', '1 1 1');
-                    box.setAttribute('color', '#4CC3D9');
+                    if (isPinching) { // Fin du pincement
+                        cursor.setAttribute('color', 'red');
+                        cursor.setAttribute('scale', '1 1 1');
+                        box.setAttribute('color', '#4CC3D9');
+                        isPinching = false;
+                    }
                 }
             } else {
                 cursor.setAttribute('visible', 'false');
+                isPinching = false; // Assurez-vous que le pincement est désactivé si la main n'est plus visible
             }
         });
 
@@ -82,7 +129,7 @@
             onFrame: async () => {
                 await hands.send({image: videoElement});
             },
-            facingMode: "environment", // <--- C'est ici qu'on force l'arrière
+            facingMode: "environment", 
             width: 1280,
             height: 720
         });
