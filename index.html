@@ -1,45 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
+    <title>VR Hand Tracking - Caméra Arrière</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
-        body { margin: 0; }
-        #input_video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; }
+        body { margin: 0; overflow: hidden; }
+        #input_video { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            object-fit: cover; z-index: -1; transform: scaleX(1); /* Pas d'effet miroir pour la cam arrière */
+        }
+        #ui { position: absolute; bottom: 20px; width: 100%; text-align: center; color: white; font-family: sans-serif; z-index: 10; }
     </style>
 </head>
 <body>
+    <div id="ui">Visez votre main avec la caméra arrière</div>
     <video id="input_video" autoplay playsinline></video>
 
-    <a-scene>
-        <a-sphere id="cursor" radius="0.05" color="red"></a-sphere>
-        <a-box id="box" position="0 1.5 -2" color="blue"></a-box>
-        <a-sky opacity="0"></a-sky>
+    <a-scene vr-mode-ui="enabled: true">
+        <a-sphere id="hand-cursor" radius="0.06" color="red"></a-sphere>
+        
+        <a-box id="target-box" position="0 1.5 -2" color="#4CC3D9"></a-box>
+
+        <a-sky opacity="0"></a-sky> <a-entity camera look-controls position="0 1.6 0"></a-entity>
     </a-scene>
 
     <script>
         const videoElement = document.getElementById('input_video');
-        const cursor = document.getElementById('cursor');
+        const cursor = document.getElementById('hand-cursor');
+        const box = document.getElementById('target-box');
 
-        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        hands.setOptions({maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5});
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
+        });
 
         hands.onResults((results) => {
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const landmark = results.multiHandLandmarks[0][8]; // Index
-                const x = (0.5 - landmark.x) * 3;
-                const y = (0.5 - landmark.y) * 3 + 1.5;
+                const landmarks = results.multiHandLandmarks[0];
+                const indexTip = landmarks[8]; // Bout de l'index
+                const thumbTip = landmarks[4]; // Bout du pouce
+
+                // Conversion coordonnées (Inversion X supprimée car caméra arrière)
+                const x = (indexTip.x - 0.5) * 4; 
+                const y = -(indexTip.y - 0.5) * 3 + 1.5;
                 cursor.setAttribute('position', `${x} ${y} -1.5`);
                 cursor.setAttribute('visible', 'true');
+
+                // --- DÉTECTION DU PINCH ---
+                const distance = Math.sqrt(
+                    Math.pow(indexTip.x - thumbTip.x, 2) + 
+                    Math.pow(indexTip.y - thumbTip.y, 2)
+                );
+
+                if (distance < 0.06) { // Seuil du pincement
+                    cursor.setAttribute('color', 'green');
+                    cursor.setAttribute('scale', '1.5 1.5 1.5');
+                    box.setAttribute('color', 'yellow');
+                    // Optionnel : faire suivre le cube
+                    // box.setAttribute('position', `${x} ${y} -2`);
+                } else {
+                    cursor.setAttribute('color', 'red');
+                    cursor.setAttribute('scale', '1 1 1');
+                    box.setAttribute('color', '#4CC3D9');
+                }
             } else {
                 cursor.setAttribute('visible', 'false');
             }
         });
 
+        // --- FORCER LA CAMÉRA ARRIÈRE ---
         const camera = new Camera(videoElement, {
-            onFrame: async () => { await hands.send({image: videoElement}); },
-            width: 640, height: 480
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            facingMode: "environment", // <--- C'est ici qu'on force l'arrière
+            width: 1280,
+            height: 720
         });
         camera.start();
     </script>
