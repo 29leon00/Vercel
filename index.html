@@ -2,187 +2,192 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Functional Hand-OS v2.0</title>
+    <title>Hand-OS Pro v3.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary: #007AFF; /* Bleu iOS/Material */
-            --bg: #000000;
-            --card: #1C1C1E;
-            --text: #FFFFFF;
-        }
-        body {
-            margin: 0; background: var(--bg); color: var(--text);
-            font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh;
-        }
-
-        /* Curseur Stabilisé */
+        :root { --primary: #007AFF; --bg: #000; --panel: #1c1c1e; }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
+        
+        /* Curseur de Précision */
         #cursor {
-            position: fixed; width: 24px; height: 24px;
-            border: 2px solid var(--text); border-radius: 50%;
-            pointer-events: none; z-index: 10000;
-            box-shadow: 0 0 15px rgba(255,255,255,0.3);
-            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            mix-blend-mode: difference;
+            position: fixed; width: 22px; height: 22px; border: 2px solid white;
+            border-radius: 50%; pointer-events: none; z-index: 10000;
+            transition: transform 0.1s; mix-blend-mode: difference;
         }
-        #cursor.clicking { transform: scale(0.6); background: var(--primary); border-color: var(--primary); }
+        #cursor.pinch { transform: scale(0.6); background: var(--primary); }
 
         /* Dashboard */
-        .desktop {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;
-            padding: 100px; height: 100%; align-content: center;
+        .desktop { display: flex; justify-content: center; gap: 40px; padding-top: 20vh; }
+        .app-btn {
+            background: var(--panel); padding: 30px; border-radius: 20px;
+            width: 150px; text-align: center; border: 2px solid transparent;
+            transition: 0.3s; cursor: pointer;
         }
-
-        .app-icon {
-            background: var(--card); border-radius: 24px; padding: 40px;
-            text-align: center; cursor: pointer; border: 2px solid transparent;
-            transition: all 0.3s ease;
-        }
-        .app-icon.hover { transform: scale(1.05); border-color: var(--primary); background: #2C2C2E; }
-        .app-icon h2 { margin: 15px 0 0; font-weight: 500; font-size: 1.2rem; }
+        .app-btn.active { border-color: var(--primary); transform: translateY(-10px); }
 
         /* Fenêtres */
         .window {
-            position: fixed; inset: 50px; background: var(--card);
-            border-radius: 32px; display: none; flex-direction: column;
-            padding: 40px; z-index: 500; box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            position: fixed; top: 50px; left: 50px; right: 50px; bottom: 50px;
+            background: var(--panel); border-radius: 30px; display: none;
+            flex-direction: column; z-index: 500; overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
-        .window.active { display: flex; }
-        .close-btn { 
-            position: absolute; top: 30px; left: 30px; padding: 10px 20px;
-            background: #3A3A3C; border-radius: 12px; font-weight: bold;
-        }
+        .win-header { padding: 20px; display: flex; background: #2c2c2e; }
+        .back-btn { background: #3a3a3c; padding: 10px 20px; border-radius: 10px; }
 
-        #video_stream { display: none; }
+        /* App : Musique */
+        #visualizer { width: 100%; height: 200px; background: #000; }
+
+        /* App : Web */
+        #web-frame { flex-grow: 1; border: none; background: white; }
+
+        #video_in { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="cursor"></div>
+<div id="cursor"></div>
 
-    <div class="desktop" id="desktop">
-        <div class="app-icon" data-target="win-music">
-            <span style="font-size: 50px">🎵</span>
-            <h2>Musique</h2>
-        </div>
-        <div class="app-icon" data-target="win-browser">
-            <span style="font-size: 50px">🌐</span>
-            <h2>Browser</h2>
-        </div>
-        <div class="app-icon" data-target="win-settings">
-            <span style="font-size: 50px">⚙️</span>
-            <h2>Settings</h2>
-        </div>
+<div class="desktop" id="home">
+    <div class="app-btn" onclick="showWin('music')"><h2>🎵</h2><p>Audio</p></div>
+    <div class="app-btn" onclick="showWin('web')"><h2>🌐</h2><p>Web</p></div>
+    <div class="app-btn" onclick="showWin('settings')"><h2>⚙️</h2><p>Réglages</p></div>
+</div>
+
+<div class="window" id="win-music">
+    <div class="win-header"><div class="back-btn" onclick="closeWin()">← Quitter</div></div>
+    <div style="padding: 20px; text-align: center;">
+        <h1>Analyseur de Spectre</h1>
+        <p>Réagit aux sons captés par votre micro ou votre système.</p>
+        <canvas id="visualizer"></canvas>
+        <button onclick="initAudio()" style="margin-top:20px; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px;">Activer l'écoute</button>
     </div>
+</div>
 
-    <div class="window" id="app-window">
-        <div class="close-btn" id="close-btn">← RETOUR</div>
-        <h1 id="win-title" style="margin-top: 60px; font-size: 3rem;">App</h1>
-        <div id="win-content" style="font-size: 1.5rem; color: #8E8E93;"></div>
+<div class="window" id="win-web">
+    <div class="win-header"><div class="back-btn" onclick="closeWin()">← Quitter</div></div>
+    <iframe id="web-frame" src="https://m.wikipedia.org/wiki/Main_Page"></iframe>
+</div>
+
+<div class="window" id="win-settings">
+    <div class="win-header"><div class="back-btn" onclick="closeWin()">← Quitter</div></div>
+    <div style="padding: 40px;">
+        <h1>Paramètres Système</h1>
+        <label>Luminosité de l'interface</label><br>
+        <input type="range" min="20" max="100" value="100" id="bright-slider" style="width:300px">
+        <br><br>
+        <label>Volume du retour audio (Beep)</label><br>
+        <input type="range" min="0" max="100" value="50" style="width:300px">
     </div>
+</div>
 
-    <video id="video_stream" autoplay playsinline></video>
+<video id="video_in" autoplay playsinline></video>
 
-    <script>
-        const cursor = document.getElementById('cursor');
-        const desktop = document.getElementById('desktop');
-        const appWindow = document.getElementById('app-window');
-        
-        let isMirror = true;
-        let cX = 0, cY = 0; // Coordonnées actuelles lissées
-        const smoothing = 0.2; // Entre 0.1 (très lent/stable) et 1 (réactif/tremblant)
-        let isPinching = false;
-        let lastClickTime = 0;
+<script>
+    const cursor = document.getElementById('cursor');
+    const brightness = document.getElementById('bright-slider');
+    let isMirror = true;
+    let cX = 0, cY = 0; // Position stable
+    let canClick = true;
 
-        // --- Configuration MediaPipe ---
-        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
+    // --- LOGIQUE STABILISATION ---
+    const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
 
-        
+    hands.onResults((res) => {
+        if (res.multiHandLandmarks && res.multiHandLandmarks.length > 0) {
+            const idx = res.multiHandLandmarks[0][8];
+            const thm = res.multiHandLandmarks[0][4];
 
-        hands.onResults((results) => {
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const landmark = results.multiHandLandmarks[0][8]; // Index tip
-                const thumb = results.multiHandLandmarks[0][4]; // Thumb tip
+            let tx = (isMirror ? 1 - idx.x : idx.x) * window.innerWidth;
+            let ty = idx.y * window.innerHeight;
 
-                // 1. Calcul des positions avec inversion miroir
-                let targetX = (isMirror ? 1 - landmark.x : landmark.x) * window.innerWidth;
-                let targetY = landmark.y * window.innerHeight;
+            cX += (tx - cX) * 0.2; // Lissage progressif
+            cY += (ty - cY) * 0.2;
 
-                // 2. Lissage (Interpolation linéaire)
-                cX += (targetX - cX) * smoothing;
-                cY += (targetY - cY) * smoothing;
+            cursor.style.left = cX + 'px';
+            cursor.style.top = cY + 'px';
 
-                cursor.style.left = `${cX}px`;
-                cursor.style.top = `${cY}px`;
-
-                // 3. Détection du clic (Pinch)
-                const distance = Math.hypot(landmark.x - thumb.x, landmark.y - thumb.y);
-                
-                if (distance < 0.045) { // Seuil de pincement
-                    if (!isPinching) {
-                        isPinching = true;
-                        cursor.classList.add('clicking');
-                        executeClick(cX, cY);
-                    }
-                } else {
-                    isPinching = false;
-                    cursor.classList.remove('clicking');
-                    highlightHover(cX, cY);
-                }
+            const dist = Math.hypot(idx.x - thm.x, idx.y - thm.y);
+            if (dist < 0.045) {
+                cursor.classList.add('pinch');
+                if (canClick) { triggerClick(cX, cY); canClick = false; }
+            } else {
+                cursor.classList.remove('pinch');
+                canClick = true;
+                updateHover(cX, cY);
             }
+        }
+    });
+
+    // --- NAVIGATION ---
+    function showWin(id) {
+        document.querySelectorAll('.window').forEach(w => w.style.display = 'none');
+        document.getElementById('win-' + id).style.display = 'flex';
+    }
+    function closeWin() { document.querySelectorAll('.window').forEach(w => w.style.display = 'none'); }
+
+    function updateHover(x, y) {
+        document.querySelectorAll('.app-btn, .back-btn, input').forEach(el => {
+            const r = el.getBoundingClientRect();
+            if (x > r.left && x < r.right && y > r.top && y < r.bottom) el.style.boxShadow = "0 0 20px #007AFF";
+            else el.style.boxShadow = "none";
         });
+    }
 
-        // --- Logique Fonctionnelle ---
-        function highlightHover(x, y) {
-            const icons = document.querySelectorAll('.app-icon, .close-btn');
-            icons.forEach(icon => {
-                const r = icon.getBoundingClientRect();
-                if (x > r.left && x < r.right && y > r.top && y < r.bottom) {
-                    icon.classList.add('hover');
-                } else {
-                    icon.classList.remove('hover');
+    function triggerClick(x, y) {
+        const target = document.elementFromPoint(x, y);
+        if (target) target.click();
+    }
+
+    // --- MUSIQUE FONCTIONNELLE (Visualizer) ---
+    function initAudio() {
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioCtx.createMediaStreamSource(stream);
+            const analyser = audioCtx.createAnalyser();
+            source.connect(analyser);
+            analyser.fftSize = 256;
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                let barWidth = (canvas.width / bufferLength) * 2.5;
+                let x = 0;
+                for(let i = 0; i < bufferLength; i++) {
+                    let barHeight = dataArray[i]/2;
+                    ctx.fillStyle = `rgb(0, 122, 255)`;
+                    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    x += barWidth + 1;
                 }
-            });
-        }
-
-        function executeClick(x, y) {
-            const now = Date.now();
-            if (now - lastClickTime < 600) return; // Anti-double clic involontaire
-            
-            const target = document.elementFromPoint(x, y);
-            const btn = target ? target.closest('.app-icon, .close-btn') : null;
-
-            if (btn) {
-                if (btn.id === 'close-btn') {
-                    appWindow.classList.remove('active');
-                } else {
-                    const appName = btn.querySelector('h2').innerText;
-                    document.getElementById('win-title').innerText = appName;
-                    document.getElementById('win-content').innerText = `Chargement de l'interface ${appName}...`;
-                    appWindow.classList.add('active');
-                }
-                lastClickTime = now;
             }
-        }
+            draw();
+        });
+    }
 
-        // --- Init Caméra ---
-        async function start() {
-            const stream = await navigator.mediaDevices.getUserMedia({video: { facingMode: "environment" }});
-            const settings = stream.getVideoTracks()[0].getSettings();
-            isMirror = (settings.facingMode === 'user' || !settings.facingMode);
-            
-            document.getElementById('video_stream').srcObject = stream;
-            const camera = new Camera(document.getElementById('video_stream'), {
-                onFrame: async () => { await hands.send({image: document.getElementById('video_stream')}); },
-                width: 1280, height: 720
-            });
-            camera.start();
-        }
+    // --- RÉGLAGES FONCTIONNELS ---
+    brightness.oninput = () => {
+        document.body.style.filter = `brightness(${brightness.value}%)`;
+    };
 
-        start();
-    </script>
+    // --- CAMÉRA ---
+    async function start() {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        isMirror = (stream.getVideoTracks()[0].getSettings().facingMode === 'user' || !stream.getVideoTracks()[0].getSettings().facingMode);
+        document.getElementById('video_in').srcObject = stream;
+        new Camera(document.getElementById('video_in'), {
+            onFrame: async () => { await hands.send({ image: document.getElementById('video_in') }); }
+        }).start();
+    }
+    start();
+</script>
 </body>
 </html>
