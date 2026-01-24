@@ -2,42 +2,54 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Hand-OS Professional</title>
+    <title>Hand-OS Ultra - MacOS Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
-        :root { --primary: #007AFF; --bg: #000; --panel: #1c1c1e; --text: #fff; }
-        body, html { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; height: 100%; }
+        :root { --primary: #007AFF; --bg: #000; --panel: rgba(28, 28, 30, 0.95); --text: #fff; }
+        body, html { margin: 0; padding: 0; background: url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&w=2000&q=80') center/cover; color: var(--text); font-family: -apple-system, sans-serif; overflow: hidden; height: 100%; }
 
-        /* CURSEUR ET PREVIEW */
+        /* CURSEUR STABILISÉ */
         #cursor {
-            position: fixed; width: 20px; height: 20px; border: 2px solid #fff;
-            border-radius: 50%; pointer-events: none; z-index: 9999;
-            transition: transform 0.05s; mix-blend-mode: difference;
+            position: fixed; width: 18px; height: 18px; border: 2px solid white;
+            border-radius: 50%; pointer-events: none; z-index: 10000;
+            mix-blend-mode: difference; transition: transform 0.1s ease;
         }
-        #cursor.pinch { transform: scale(0.5); background: var(--primary); }
-        #v-prev { position: fixed; bottom: 20px; right: 20px; width: 120px; border-radius: 10px; opacity: 0.6; transform: scaleX(-1); }
+        #cursor.pinch { transform: scale(0.6); background: var(--primary); }
 
-        /* INTERFACE DESKTOP */
-        .status-bar { height: 30px; background: rgba(0,0,0,0.5); display: flex; justify-content: space-between; padding: 5px 20px; align-items: center; font-size: 14px; }
-        .desktop { height: calc(100vh - 40px); display: grid; grid-template-columns: repeat(auto-fill, 100px); gap: 30px; padding: 40px; }
-        
-        .icon { width: 80px; height: 100px; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: 0.2s; }
-        .icon-img { width: 64px; height: 64px; background: var(--panel); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 8px; border: 2px solid transparent; }
-        .icon.hover .icon-img { border-color: var(--primary); transform: scale(1.1); }
-        .icon span { font-size: 12px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        /* DOCK STYLE MACOS */
+        .dock-container { position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+        .dock {
+            background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(25px);
+            padding: 8px; border-radius: 20px; display: flex; align-items: flex-end;
+            gap: 12px; border: 0.5px solid rgba(255,255,255,0.3);
+        }
+        .dock-item {
+            width: 50px; height: 50px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; cursor: pointer; transition: all 0.2s cubic-bezier(0.12, 0, 0.39, 0);
+        }
+        .dock-item.hover { width: 80px; height: 80px; font-size: 50px; margin: 0 10px; }
 
-        /* FENÊTRES */
-        .window { position: fixed; inset: 60px; background: var(--panel); border-radius: 20px; display: none; flex-direction: column; box-shadow: 0 30px 60px rgba(0,0,0,0.8); z-index: 100; border: 1px solid #333; }
+        /* GESTIONNAIRE DE FENÊTRES */
+        .window { 
+            position: fixed; top: 80px; left: 80px; right: 80px; bottom: 120px;
+            background: var(--panel); border-radius: 18px; display: none;
+            flex-direction: column; box-shadow: 0 50px 100px rgba(0,0,0,0.6); z-index: 100;
+            border: 0.5px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+        }
         .win-active { display: flex; }
-        .win-head { padding: 15px; background: #2c2c2e; display: flex; align-items: center; border-radius: 20px 20px 0 0; }
-        .dot { width: 12px; height: 12px; background: #ff453a; border-radius: 50%; margin-right: 15px; }
-        .win-body { flex-grow: 1; position: relative; overflow: hidden; }
+        .win-head { padding: 12px; background: rgba(0,0,0,0.2); display: flex; align-items: center; border-radius: 18px 18px 0 0; }
+        .close-dot { width: 12px; height: 12px; background: #ff453a; border-radius: 50%; cursor: pointer; margin-right: 15px; }
 
-        /* APP DESSIN */
-        #paint-canvas { background: white; cursor: none; width: 100%; height: 100%; }
+        /* APPLICATIONS */
+        .file-grid { display: grid; grid-template-columns: repeat(auto-fill, 100px); gap: 20px; padding: 20px; }
+        .file-item { text-align: center; font-size: 12px; cursor: pointer; padding: 10px; border-radius: 8px; }
+        .file-item.hover { background: rgba(255,255,255,0.1); }
         
-        button { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; margin: 5px; }
+        #editor { width: 100%; height: 100%; border: none; padding: 40px; box-sizing: border-box; background: white; color: black; font-size: 18px; outline: none; resize: none; }
+        
+        #v-prev { position: fixed; top: 10px; right: 10px; width: 100px; border-radius: 10px; transform: scaleX(-1); opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -45,55 +57,62 @@
 <div id="cursor"></div>
 <video id="v-prev" autoplay playsinline></video>
 
-<div class="status-bar">
-    <div id="os-time">00:00</div>
-    <div>Hand-OS v6.0 - Connecté</div>
-</div>
-
-<div class="desktop" id="desk">
-    <div class="icon" data-app="paint"><div class="icon-img">🎨</div><span>Dessin</span></div>
-    <div class="icon" data-app="music"><div class="icon-img">🎵</div><span>Musique</span></div>
-    <div class="icon" data-app="web"><div class="icon-img">🌐</div><span>Web</span></div>
-    <div class="icon" data-app="files"><div class="icon-img">📂</div><span>Fichiers</span></div>
+<div class="dock-container">
+    <div class="dock">
+        <div class="dock-item" data-app="files" title="Finder">📂</div>
+        <div class="dock-item" data-app="writer" title="LibreOffice Writer">📝</div>
+        <div class="dock-item" data-app="paint" title="Photos/Dessin">🎨</div>
+        <div class="dock-item" data-app="web" title="Safari">🌐</div>
+    </div>
 </div>
 
 <div id="win" class="window">
-    <div class="win-head"><div class="dot" onclick="closeApp()"></div><span id="win-t">App</span></div>
-    <div id="win-b" class="win-body"></div>
+    <div class="win-head">
+        <div class="close-dot" onclick="closeApp()"></div>
+        <span id="win-title" style="font-weight:600; font-size:14px; opacity:0.8;">Application</span>
+    </div>
+    <div id="win-body" style="flex-grow:1; overflow:auto;"></div>
 </div>
 
 <script>
     const cursor = document.getElementById('cursor');
     const win = document.getElementById('win');
-    const winB = document.getElementById('win-b');
-    let cX = 0, cY = 0, isMirror = true, isPinching = false;
-    let paintCtx = null;
+    const winBody = document.getElementById('win-body');
+    let cX = 0, cY = 0, isMirror = true;
 
-    // --- CONFIG APPS ---
+    // --- BASE DE DONNÉES DE L'OS ---
+    const FilesSystem = [
+        { name: "Curriculum.odt", type: "writer", icon: "📄" },
+        { name: "Vacances.jpg", type: "paint", icon: "🖼️" },
+        { name: "Budget.ods", type: "writer", icon: "📊" }
+    ];
+
     const Apps = {
-        paint: {
-            title: "Studio de Dessin",
-            init: () => {
-                winB.innerHTML = `<div style="position:absolute;top:10px;left:10px;z-index:10;"><button onclick="clearCanvas()">Effacer</button></div><canvas id="paint-canvas"></canvas>`;
-                const cvs = document.getElementById('paint-canvas');
-                cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
-                paintCtx = cvs.getContext('2d');
-                paintCtx.lineCap = 'round'; paintCtx.lineWidth = 5; paintCtx.strokeStyle = '#007AFF';
-            }
+        writer: {
+            title: "LibreOffice Writer",
+            render: () => `<textarea id="editor" placeholder="Commencez à rédiger votre document..."></textarea>`
         },
         files: {
-            title: "Explorateur de fichiers",
-            init: () => {
-                winB.innerHTML = `<div style="padding:20px; display:grid; grid-template-columns: repeat(4, 1fr); gap:20px;">
-                    ${['Documents', 'Photos', 'Projets', 'Vidéos'].map(f => `<div class="icon"><div class="icon-img" style="background:#3a3a3c">📁</div><span>${f}</span></div>`).join('')}
-                </div>`;
-            }
+            title: "Finder - Mes Fichiers",
+            render: () => `
+                <div class="file-grid">
+                    ${FilesSystem.map(f => `<div class="file-item" onclick="openApp('${f.type}')">
+                        <div style="font-size:40px">${f.icon}</div>
+                        <div>${f.name}</div>
+                    </div>`).join('')}
+                </div>`
         },
-        music: { title: "Audio System", init: () => { winB.innerHTML = `<div style="padding:40px;text-align:center;"><h2>Lecteur Audio</h2><p>Analyse de la sortie système active...</p></div>`; } },
-        web: { title: "Navigateur", init: () => { winB.innerHTML = `<iframe src="https://www.wikipedia.org" style="width:100%;height:100%;border:none;background:white;"></iframe>`; } }
+        paint: {
+            title: "Dessin",
+            render: () => `<canvas id="pc" style="background:white;width:100%;height:100%"></canvas>`
+        },
+        web: {
+            title: "Safari",
+            render: () => `<iframe src="https://www.wikipedia.org" style="width:100%;height:100%;border:none;background:white;"></iframe>`
+        }
     };
 
-    // --- GESTES ---
+    // --- TRACKING MAINS (MEDIAPIPE) ---
     const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
     hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
 
@@ -104,55 +123,46 @@
             const idx = res.multiHandLandmarks[0][8];
             const thm = res.multiHandLandmarks[0][4];
 
+            // Positionnement & Lissage
             let tx = (isMirror ? 1 - idx.x : idx.x) * window.innerWidth;
             let ty = idx.y * window.innerHeight;
-            cX += (tx - cX) * 0.2; cY += (ty - cY) * 0.2;
+            cX += (tx - cX) * 0.25; cY += (ty - cY) * 0.25;
 
             cursor.style.left = cX + 'px'; cursor.style.top = cY + 'px';
 
             const dist = Math.hypot(idx.x - thm.x, idx.y - thm.y);
-            
-            if (dist < 0.04) {
-                if (!isPinching) {
-                    isPinching = true; cursor.classList.add('pinch');
+            if (dist < 0.045) {
+                if (!cursor.classList.contains('pinch')) {
+                    cursor.classList.add('pinch');
                     const target = document.elementFromPoint(cX, cY);
                     if (target) target.click();
-                    if (paintCtx) {
-                        const r = document.getElementById('paint-canvas').getBoundingClientRect();
-                        paintCtx.beginPath(); paintCtx.moveTo(cX - r.left, cY - r.top);
-                    }
-                } else if (paintCtx) {
-                    const r = document.getElementById('paint-canvas').getBoundingClientRect();
-                    paintCtx.lineTo(cX - r.left, cY - r.top); paintCtx.stroke();
                 }
             } else {
-                isPinching = false; cursor.classList.remove('pinch');
+                cursor.classList.remove('pinch');
                 updateHover(cX, cY);
             }
         }
     });
 
-    // --- LOGIQUE SYSTEME ---
+    // --- LOGIQUE OS ---
     function openApp(id) {
-        document.getElementById('win-t').innerText = Apps[id].title;
+        document.getElementById('win-title').innerText = Apps[id].title;
+        winBody.innerHTML = Apps[id].render();
         win.classList.add('win-active');
-        Apps[id].init();
     }
-    function closeApp() { win.classList.remove('win-active'); paintCtx = null; }
-    function clearCanvas() { if(paintCtx) paintCtx.clearRect(0,0,2000,2000); }
+
+    function closeApp() { win.classList.remove('win-active'); }
 
     function updateHover(x, y) {
-        document.querySelectorAll('.icon, .dot, button').forEach(el => {
+        document.querySelectorAll('.dock-item, .file-item, .close-dot').forEach(el => {
             const r = el.getBoundingClientRect();
             if (x > r.left && x < r.right && y > r.top && y < r.bottom) el.classList.add('hover');
             else el.classList.remove('hover');
         });
     }
 
-    document.querySelectorAll('.icon').forEach(i => i.onclick = () => openApp(i.dataset.app));
-    setInterval(() => { document.getElementById('os-time').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }, 1000);
+    document.querySelectorAll('.dock-item').forEach(i => i.onclick = () => openApp(i.dataset.app));
 
-    // --- DEMARRAGE ---
     async function start() {
         const stream = await navigator.mediaDevices.getUserMedia({video:true});
         document.getElementById('v-prev').srcObject = stream;
