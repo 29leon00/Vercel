@@ -2,35 +2,50 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>VR Interface - Hand Control</title>
+    <title>VR OS - Hand Tracking Interface</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
 
-    <a-scene background="color: #111" vr-mode-ui="enabled: true">
+    <a-scene background="color: #050505" vr-mode-ui="enabled: true">
         <a-assets>
-            <a-mixin id="button-style" geometry="primitive: plane; width: 0.5; height: 0.2" material="color: #333"></a-mixin>
+            <a-mixin id="app-icon" geometry="primitive: plane; width: 0.3; height: 0.3" material="color: #444; shader: flat"></a-mixin>
+            <a-mixin id="hover-effect" material="color: #00FF00"></a-mixin>
         </a-assets>
 
-        <a-grid position="0 0 0" material="opacity: 0.2; transparent: true"></a-grid>
-        
-        <a-entity id="menu" position="0 1.5 -1">
-            <a-plane width="1.2" height="0.8" material="color: #222; opacity: 0.9">
-                <a-text value="CONTROLE VR" align="center" position="0 0.3 0.01" width="3"></a-text>
+        <a-entity id="main-menu" position="0 1.4 -1.2">
+            <a-text value="APPLICATIONS" align="center" position="0 0.5 0" width="3"></a-text>
+            
+            <a-entity id="app-music" class="app-btn" mixin="app-icon" position="-0.4 0.1 0">
+                <a-text value="MUSIC" align="center" position="0 -0.25 0" width="1.5"></a-text>
+                <a-box scale="0.1 0.1 0.1" color="red"></a-box>
+            </a-entity>
+
+            <a-entity id="app-weather" class="app-btn" mixin="app-icon" position="0 0.1 0">
+                <a-text value="WEATHER" align="center" position="0 -0.25 0" width="1.5"></a-text>
+                <a-sphere scale="0.08 0.08 0.08" color="yellow"></a-sphere>
+            </a-entity>
+
+            <a-entity id="app-settings" class="app-btn" mixin="app-icon" position="0.4 0.1 0">
+                <a-text value="SETTINGS" align="center" position="0 -0.25 0" width="1.5"></a-text>
+                <a-torus scale="0.06 0.06 0.06" color="blue"></a-torus>
+            </a-entity>
+        </a-entity>
+
+        <a-entity id="app-page" position="0 1.4 -1.1" visible="false">
+            <a-plane width="1" height="0.7" color="#111">
+                <a-text id="app-title" value="App Name" align="center" position="0 0.25 0.01" width="3"></a-text>
+                <a-text id="app-content" value="Contenu de l'application..." align="center" position="0 0 0.01" width="2"></a-text>
                 
-                <a-entity id="btn-1" mixin="button-style" position="0 0.05 0.02" class="clickable">
-                    <a-text value="BOUTON A" align="center" width="2"></a-text>
-                </a-entity>
-                
-                <a-entity id="btn-2" mixin="button-style" position="0 -0.2 0.02" class="clickable">
-                    <a-text value="BOUTON B" align="center" width="2"></a-text>
+                <a-entity id="back-btn" mixin="app-icon" position="0 -0.2 0.02" scale="0.5 0.5 1" material="color: #666">
+                    <a-text value="RETOUR" align="center" width="2.5"></a-text>
                 </a-entity>
             </a-plane>
         </a-entity>
 
-        <a-sphere id="hand-cursor" radius="0.02" color="#00FF00" visible="false"></a-sphere>
+        <a-sphere id="hand-cursor" radius="0.015" color="#00FF00"></a-sphere>
 
         <a-entity id="rig" position="0 0 0">
             <a-camera look-controls wasd-controls-enabled="false"></a-camera>
@@ -42,61 +57,68 @@
     <script>
         const videoElement = document.getElementById('input_video');
         const cursor = document.getElementById('hand-cursor');
-        const buttons = document.querySelectorAll('.clickable');
+        const mainMenu = document.getElementById('main-menu');
+        const appPage = document.getElementById('app-page');
+        const appTitle = document.getElementById('app-title');
+        
+        let currentScreen = "menu";
 
-        const hands = new Hands({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-        });
-
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.8,
-            minTrackingConfidence: 0.8
-        });
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8, minTrackingConfidence: 0.8});
 
         hands.onResults((results) => {
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const hand = results.multiHandLandmarks[0];
-                const indexTip = hand[8];
-                const thumbTip = hand[4];
+                const index = hand[8];
+                const thumb = hand[4];
 
-                // --- Correction de la hauteur (y) et de l'alignement ---
-                // On centre les coordonnées (x-0.5) et on ajuste y pour qu'il soit plus bas
-                const x = (indexTip.x - 0.5) * 2; 
-                const y = -(indexTip.y - 0.5) * 1.5 + 1.3; // +1.3 au lieu de 1.5 pour baisser le curseur
-                const z = -0.8; // Distance devant les yeux
+                // AJUSTEMENT CURSEUR (Plus bas et plus centré)
+                const x = (index.x - 0.5) * 2;
+                const y = -(index.y - 0.5) * 1.5 + 1.25; // Abaissé pour Cardboard
+                const z = -0.9;
 
                 cursor.setAttribute('position', `${x} ${y} ${z}`);
                 cursor.setAttribute('visible', 'true');
 
-                // Détection du pincement (click virtuel)
-                const distance = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-                
-                if (distance < 0.05) {
-                    cursor.setAttribute('color', '#FF0000'); // Rouge quand on clique
-                    
-                    // Interaction avec les boutons
-                    buttons.forEach(btn => {
-                        const btnPos = btn.parentElement.getAttribute('position'); // Menu pos
-                        const localBtnPos = btn.getAttribute('position'); // Offset pos
-                        const worldX = btnPos.x + localBtnPos.x;
-                        const worldY = btnPos.y + localBtnPos.y;
+                const dist = Math.hypot(index.x - thumb.x, index.y - thumb.y);
+                const isPinching = dist < 0.05;
 
-                        // Si le doigt est proche du bouton
-                        if (Math.abs(x - worldX) < 0.2 && Math.abs(y - worldY) < 0.1) {
-                            btn.setAttribute('material', 'color', '#00AAFF');
-                            // Action ici (ex: console.log)
-                        }
-                    });
+                if (isPinching) {
+                    cursor.setAttribute('color', 'red');
+                    checkClick(x, y);
                 } else {
-                    cursor.setAttribute('color', '#00FF00');
-                    buttons.forEach(btn => btn.setAttribute('material', 'color', '#333'));
+                    cursor.setAttribute('color', 'green');
                 }
             } else {
                 cursor.setAttribute('visible', 'false');
             }
         });
+
+        function checkClick(x, y) {
+            if (currentScreen === "menu") {
+                // Détection clics menu (très simplifié par coordonnées)
+                if (y > 1.3 && y < 1.7) {
+                    if (x < -0.2) openApp("MUSIQUE", "Lecture en cours...");
+                    else if (x > -0.2 && x < 0.2) openApp("METEO", "22°C - Ensoleillé");
+                    else if (x > 0.2) openApp("SETTINGS", "Volume: 80%\nWiFi: OK");
+                }
+            } else {
+                // Bouton retour
+                if (y > 1.1 && y < 1.3 && Math.abs(x) < 0.2) {
+                    currentScreen = "menu";
+                    mainMenu.setAttribute('visible', 'true');
+                    appPage.setAttribute('visible', 'false');
+                }
+            }
+        }
+
+        function openApp(name, content) {
+            currentScreen = "app";
+            appTitle.setAttribute('value', name);
+            document.getElementById('app-content').setAttribute('value', content);
+            mainMenu.setAttribute('visible', 'false');
+            appPage.setAttribute('visible', 'true');
+        }
 
         const camera = new Camera(videoElement, {
             onFrame: async () => { await hands.send({image: videoElement}); },
