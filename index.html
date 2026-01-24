@@ -1,155 +1,167 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <title>Hand-OS Gaming</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu MediaPipe Hands - Capture</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+
     <style>
-        :root { --accent: #34c759; --win-bg: #1c1c1e; }
-        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; overflow: hidden; }
-        #desktop { width: 100vw; height: 100vh; background: radial-gradient(circle, #2c3e50, #000000); }
-        
-        /* IA & CURSEUR */
-        #cursor { position: fixed; width: 20px; height: 20px; border: 2px solid #fff; border-radius: 50%; pointer-events: none; z-index: 9999; mix-blend-mode: difference; }
-        #v-stream { position: fixed; top: 10px; right: 10px; width: 120px; border-radius: 10px; transform: scaleX(-1); opacity: 0.5; border: 1px solid #34c759; }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-        /* FENÊTRE DE JEU */
-        #win { position: absolute; top: 5%; left: 5%; width: 90%; height: 80%; background: var(--win-bg); border-radius: 15px; display: none; flex-direction: column; border: 1px solid #333; box-shadow: 0 0 50px rgba(0,255,0,0.2); }
-        .win-head { padding: 15px; background: #2c2c2e; display: flex; justify-content: space-between; border-radius: 15px 15px 0 0; }
-        .win-body { flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #000; }
-        canvas { border: 2px solid #444; background: #000; max-width: 100%; max-height: 100%; }
+        /* Vidéo masquée mais active pour la détection */
+        #input_video {
+            display: none;
+        }
 
-        /* DOCK */
-        #dock { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); padding: 10px 20px; border-radius: 25px; display: flex; gap: 20px; }
-        .icon { font-size: 35px; cursor: pointer; transition: 0.3s; }
-        .icon:hover { transform: scale(1.3) rotate(5deg); }
-        .close-btn { color: #ff5f57; font-weight: bold; cursor: pointer; }
+        /* Canvas plein écran avec effet miroir */
+        #output_canvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .stat {
+            font-size: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            color: #aaa;
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body>
 
-<div id="desktop">
-    <div id="cursor"></div>
-    <video id="v-stream" autoplay playsinline></video>
-
-    <div id="win">
-        <div class="win-head">
-            <span id="win-title">Game Center</span>
-            <span class="close-btn" onclick="stopGame()">QUITTER ✕</span>
-        </div>
-        <div id="win-body" class="win-body">
-            <canvas id="gameCanvas"></canvas>
-        </div>
+    <div id="ui">
+        <div class="stat" id="score">Score: 0</div>
     </div>
 
-    <div id="dock">
-        <div class="icon" onclick="startGame('snake')" title="Snake">🐍</div>
-        <div class="icon" onclick="startGame('pong')" title="Pong">🎾</div>
-        <div class="icon" onclick="alert('Score Snake: ' + (localStorage.getItem('snakeScore') || 0))">🏆</div>
-    </div>
-</div>
+    <div id="instructions">Déplacez votre index pour toucher les cibles rouges !</div>
 
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    let currentGame = null;
-    let gameLoop = null;
-    let handPos = { x: 0, y: 0 };
+    <video id="input_video"></video>
+    <canvas id="output_canvas"></canvas>
 
-    // --- LOGIQUE DES JEUX ---
-    const Games = {
-        snake: {
-            sn: [{x:10, y:10}], dir: {x:0, y:0}, food: {x:15, y:15}, score: 0,
-            init() {
-                canvas.width = 400; canvas.height = 400;
-                this.sn = [{x:10, y:10}]; this.score = 0;
-            },
-            update() {
-                // Direction via la main (par rapport au centre du canvas)
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
-                const relX = handPos.x - (window.innerWidth / 2);
-                const relY = handPos.y - (window.innerHeight / 2);
+    <script>
+        const videoElement = document.getElementById('input_video');
+        const canvasElement = document.getElementById('output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const scoreElement = document.getElementById('score');
 
-                if (Math.abs(relX) > Math.abs(relY)) {
-                    this.dir = relX > 0 ? {x:1, y:0} : {x:-1, y:0};
-                } else {
-                    this.dir = relY > 0 ? {x:0, y:1} : {x:0, y:-1};
+        let score = 0;
+        let target = { x: 0, y: 0, radius: 40 };
+        let indexPos = { x: 0, y: 0 };
+        
+        // Initialisation de la cible
+        function resetTarget() {
+            target.x = Math.random() * (window.innerWidth - 100) + 50;
+            target.y = Math.random() * (window.innerHeight - 100) + 50;
+        }
+        resetTarget();
+
+        // Redimensionnement dynamique du canvas
+        function resize() {
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function onResults(results) {
+            // 1. Nettoyer le canvas
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // 2. Dessiner la cible
+            canvasCtx.beginPath();
+            canvasCtx.arc(target.x, target.y, target.radius, 0, 2 * Math.PI);
+            canvasCtx.fillStyle = '#ff4757';
+            canvasCtx.shadowBlur = 20;
+            canvasCtx.shadowColor = '#ff4757';
+            canvasCtx.fill();
+            canvasCtx.closePath();
+
+            // 3. Analyse des mains
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                for (const landmarks of results.multiHandLandmarks) {
+                    
+                    // On récupère l'index (Point 8)
+                    // (1 - x) pour l'effet miroir
+                    indexPos.x = (1 - landmarks[8].x) * canvasElement.width;
+                    indexPos.y = landmarks[8].y * canvasElement.height;
+
+                    // Dessiner le pointeur de l'index
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(indexPos.x, indexPos.y, 15, 0, 2 * Math.PI);
+                    canvasCtx.fillStyle = '#2ed573';
+                    canvasCtx.shadowBlur = 15;
+                    canvasCtx.shadowColor = '#2ed573';
+                    canvasCtx.fill();
+                    canvasCtx.closePath();
+
+                    // Vérifier la collision
+                    const dist = Math.hypot(indexPos.x - target.x, indexPos.y - target.y);
+                    if (dist < target.radius + 15) {
+                        score += 10;
+                        scoreElement.innerText = `Score: ${score}`;
+                        resetTarget();
+                    }
+
+                    // Optionnel : Dessiner le squelette de la main pour débugger
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#ffffff33', lineWidth: 2});
                 }
-
-                let head = {x: this.sn[0].x + this.dir.x, y: this.sn[0].y + this.dir.y};
-                this.sn.unshift(head);
-                if(head.x === this.food.x && head.y === this.food.y) {
-                    this.score++;
-                    this.food = {x: Math.floor(Math.random()*20), y: Math.floor(Math.random()*20)};
-                } else { this.sn.pop(); }
-
-                // Dessin
-                ctx.fillStyle = "black"; ctx.fillRect(0,0,400,400);
-                ctx.fillStyle = "#34c759"; this.sn.forEach(p => ctx.fillRect(p.x*20, p.y*20, 18, 18));
-                ctx.fillStyle = "red"; ctx.fillRect(this.food.x*20, this.food.y*20, 18, 18);
-                
-                if(head.x<0 || head.x>19 || head.y<0 || head.y>19) stopGame();
             }
-        },
-        pong: {
-            p1: 150, b: {x:200, y:200, vx:4, vy:4},
-            init() { canvas.width = 600; canvas.height = 400; },
-            update() {
-                // La raquette suit la main en Y
-                const rect = canvas.getBoundingClientRect();
-                this.p1 = (handPos.y - rect.top) - 40;
-
-                this.b.x += this.b.vx; this.b.y += this.b.vy;
-                if(this.b.y < 0 || this.b.y > 390) this.b.vy *= -1;
-                
-                // Collision raquette
-                if(this.b.x < 20 && this.b.y > this.p1 && this.b.y < this.p1 + 80) this.b.vx *= -1.1;
-                if(this.b.x > 580) this.b.vx *= -1;
-                if(this.b.x < 0) stopGame();
-
-                ctx.fillStyle = "black"; ctx.fillRect(0,0,600,400);
-                ctx.fillStyle = "white"; ctx.fillRect(10, this.p1, 10, 80); // Joueur
-                ctx.beginPath(); ctx.arc(this.b.x, this.b.y, 8, 0, Math.PI*2); ctx.fill(); // Balle
-            }
+            canvasCtx.restore();
         }
-    };
 
-    function startGame(type) {
-        if(gameLoop) clearInterval(gameLoop);
-        document.getElementById('win').style.display = 'flex';
-        currentGame = Games[type];
-        currentGame.init();
-        gameLoop = setInterval(() => currentGame.update(), 1000/15); // 15 FPS pour le style retro
-    }
+        // Configuration de MediaPipe Hands
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
 
-    function stopGame() {
-        document.getElementById('win').style.display = 'none';
-        if(currentGame === Games.snake) localStorage.setItem('snakeScore', Games.snake.score);
-        clearInterval(gameLoop);
-        gameLoop = null;
-    }
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
 
-    // --- IA TRACKING ---
-    const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
+        hands.onResults(onResults);
 
-    hands.onResults(res => {
-        if (res.multiHandLandmarks && res.multiHandLandmarks[0]) {
-            const index = res.multiHandLandmarks[0][8];
-            handPos.x = (1 - index.x) * window.innerWidth;
-            handPos.y = index.y * window.innerHeight;
-            
-            document.getElementById('cursor').style.left = handPos.x + 'px';
-            document.getElementById('cursor').style.top = handPos.y + 'px';
-        }
-    });
+        // Lancement de la caméra
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 1280,
+            height: 720
+        });
+        camera.start();
 
-    const cam = new Camera(document.getElementById('v-stream'), {
-        onFrame: async () => { await hands.send({image: document.getElementById('v-stream')}); }
-    });
-    cam.start();
-</script>
+    </script>
 </body>
 </html>
