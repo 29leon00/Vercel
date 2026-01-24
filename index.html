@@ -2,47 +2,44 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Hand-OS Pro v3.0</title>
+    <title>Hand-OS Pro v4.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #007AFF; --bg: #000; --panel: #1c1c1e; }
+        :root { --primary: #007AFF; --bg: #0b0b0c; --surface: #1c1c1e; }
         body { margin: 0; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
         
-        /* Curseur de Précision */
+        /* Curseur avec Inertie */
         #cursor {
-            position: fixed; width: 22px; height: 22px; border: 2px solid white;
+            position: fixed; width: 20px; height: 20px; border: 2px solid white;
             border-radius: 50%; pointer-events: none; z-index: 10000;
-            transition: transform 0.1s; mix-blend-mode: difference;
+            mix-blend-mode: difference; box-shadow: 0 0 10px rgba(255,255,255,0.5);
         }
-        #cursor.pinch { transform: scale(0.6); background: var(--primary); }
+        #cursor.pinch { transform: scale(0.6); background: var(--primary); border-color: var(--primary); }
 
-        /* Dashboard */
-        .desktop { display: flex; justify-content: center; gap: 40px; padding-top: 20vh; }
-        .app-btn {
-            background: var(--panel); padding: 30px; border-radius: 20px;
-            width: 150px; text-align: center; border: 2px solid transparent;
-            transition: 0.3s; cursor: pointer;
+        /* Interface Material */
+        .desktop { display: flex; justify-content: center; gap: 30px; padding-top: 15vh; }
+        .app-card {
+            background: var(--surface); padding: 25px; border-radius: 24px;
+            width: 140px; text-align: center; cursor: pointer; border: 1px solid #333;
+            transition: 0.3s cubic-bezier(0.2, 0, 0.2, 1);
         }
-        .app-btn.active { border-color: var(--primary); transform: translateY(-10px); }
+        .app-card.hover { transform: translateY(-10px); border-color: var(--primary); background: #2c2c2e; }
 
-        /* Fenêtres */
+        /* Windows */
         .window {
-            position: fixed; top: 50px; left: 50px; right: 50px; bottom: 50px;
-            background: var(--panel); border-radius: 30px; display: none;
-            flex-direction: column; z-index: 500; overflow: hidden;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            position: fixed; inset: 40px; background: var(--surface); border-radius: 30px;
+            display: none; flex-direction: column; z-index: 500; overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7); border: 1px solid #333;
         }
-        .win-header { padding: 20px; display: flex; background: #2c2c2e; }
-        .back-btn { background: #3a3a3c; padding: 10px 20px; border-radius: 10px; }
+        .window.active { display: flex; }
+        .header { padding: 20px; background: rgba(255,255,255,0.05); display: flex; justify-content: space-between; }
+        .close-btn { background: #ff453a; width: 15px; height: 15px; border-radius: 50%; cursor: pointer; }
 
-        /* App : Musique */
-        #visualizer { width: 100%; height: 200px; background: #000; }
-
-        /* App : Web */
-        #web-frame { flex-grow: 1; border: none; background: white; }
-
+        /* Audio Visualizer */
+        canvas { width: 100%; height: 250px; border-radius: 15px; background: #000; margin-top: 20px; }
+        
         #video_in { display: none; }
     </style>
 </head>
@@ -51,141 +48,152 @@
 <div id="cursor"></div>
 
 <div class="desktop" id="home">
-    <div class="app-btn" onclick="showWin('music')"><h2>🎵</h2><p>Audio</p></div>
-    <div class="app-btn" onclick="showWin('web')"><h2>🌐</h2><p>Web</p></div>
-    <div class="app-btn" onclick="showWin('settings')"><h2>⚙️</h2><p>Réglages</p></div>
+    <div class="app-card" onclick="openApp('music')"><h2>🎵</h2><p>Audio System</p></div>
+    <div class="app-card" onclick="openApp('web')"><h2>🌐</h2><p>Web Browser</p></div>
+    <div class="app-card" onclick="openApp('settings')"><h2>⚙️</h2><p>Réglages</p></div>
 </div>
 
 <div class="window" id="win-music">
-    <div class="win-header"><div class="back-btn" onclick="closeWin()">← Quitter</div></div>
-    <div style="padding: 20px; text-align: center;">
-        <h1>Analyseur de Spectre</h1>
-        <p>Réagit aux sons captés par votre micro ou votre système.</p>
-        <canvas id="visualizer"></canvas>
-        <button onclick="initAudio()" style="margin-top:20px; padding:15px; background:var(--primary); color:white; border:none; border-radius:10px;">Activer l'écoute</button>
+    <div class="header"><div class="close-btn" onclick="closeApp()"></div><span>Audio Analyzer</span><div></div></div>
+    <div style="padding: 30px; text-align: center;">
+        <h2 id="music-title">Musique de l'ordinateur</h2>
+        <p>Cliquez sur "Capturer" et choisissez "Audio du système".</p>
+        <canvas id="viz"></canvas>
+        <button onclick="captureSystemAudio()" style="margin-top:20px; padding:12px 30px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:bold;">CAPTURER L'AUDIO</button>
     </div>
 </div>
 
 <div class="window" id="win-web">
-    <div class="win-header"><div class="back-btn" onclick="closeWin()">← Quitter</div></div>
-    <iframe id="web-frame" src="https://m.wikipedia.org/wiki/Main_Page"></iframe>
+    <div class="header"><div class="close-btn" onclick="closeApp()"></div><span>Navigateur</span><div></div></div>
+    <iframe id="browser" src="https://www.wikipedia.org" style="flex-grow:1; border:none;"></iframe>
 </div>
 
 <div class="window" id="win-settings">
-    <div class="win-header"><div class="back-btn" onclick="closeWin()">← Quitter</div></div>
+    <div class="header"><div class="close-btn" onclick="closeApp()"></div><span>Settings</span><div></div></div>
     <div style="padding: 40px;">
-        <h1>Paramètres Système</h1>
-        <label>Luminosité de l'interface</label><br>
-        <input type="range" min="20" max="100" value="100" id="bright-slider" style="width:300px">
-        <br><br>
-        <label>Volume du retour audio (Beep)</label><br>
-        <input type="range" min="0" max="100" value="50" style="width:300px">
+        <h3>Lissage du curseur (Inertie)</h3>
+        <input type="range" id="smooth-range" min="5" max="40" value="15" style="width:100%">
+        <h3>Mode Miroir</h3>
+        <button onclick="isMirror = !isMirror" style="padding:10px; background:#444; color:white; border:none; border-radius:8px;">Inverser Gauche/Droite</button>
     </div>
 </div>
 
-<video id="video_in" autoplay playsinline></video>
+<video id="video_in"></video>
 
 <script>
     const cursor = document.getElementById('cursor');
-    const brightness = document.getElementById('bright-slider');
+    const smoothSlider = document.getElementById('smooth-range');
     let isMirror = true;
-    let cX = 0, cY = 0; // Position stable
-    let canClick = true;
+    let cX = window.innerWidth/2, cY = window.innerHeight/2;
+    let lerpFactor = 0.15; // Lissage par défaut
 
-    // --- LOGIQUE STABILISATION ---
+    // --- TRACKING MAINS ---
     const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
     hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
 
+    
+
     hands.onResults((res) => {
         if (res.multiHandLandmarks && res.multiHandLandmarks.length > 0) {
-            const idx = res.multiHandLandmarks[0][8];
-            const thm = res.multiHandLandmarks[0][4];
+            const index = res.multiHandLandmarks[0][8];
+            const thumb = res.multiHandLandmarks[0][4];
 
-            let tx = (isMirror ? 1 - idx.x : idx.x) * window.innerWidth;
-            let ty = idx.y * window.innerHeight;
+            // Cible
+            let targetX = (isMirror ? 1 - index.x : index.x) * window.innerWidth;
+            let targetY = index.y * window.innerHeight;
 
-            cX += (tx - cX) * 0.2; // Lissage progressif
-            cY += (ty - cY) * 0.2;
+            // Stabilisation (Lerp)
+            cX += (targetX - cX) * lerpFactor;
+            cY += (targetY - cY) * lerpFactor;
 
             cursor.style.left = cX + 'px';
             cursor.style.top = cY + 'px';
 
-            const dist = Math.hypot(idx.x - thm.x, idx.y - thm.y);
+            // Click Logic
+            const dist = Math.hypot(index.x - thumb.x, index.y - thumb.y);
             if (dist < 0.045) {
-                cursor.classList.add('pinch');
-                if (canClick) { triggerClick(cX, cY); canClick = false; }
+                if (!cursor.classList.contains('pinch')) {
+                    cursor.classList.add('pinch');
+                    const target = document.elementFromPoint(cX, cY);
+                    if (target) target.click();
+                }
             } else {
                 cursor.classList.remove('pinch');
-                canClick = true;
-                updateHover(cX, cY);
+                handleHover(cX, cY);
             }
         }
     });
 
-    // --- NAVIGATION ---
-    function showWin(id) {
-        document.querySelectorAll('.window').forEach(w => w.style.display = 'none');
-        document.getElementById('win-' + id).style.display = 'flex';
-    }
-    function closeWin() { document.querySelectorAll('.window').forEach(w => w.style.display = 'none'); }
+    // --- AUDIO SYSTEME ---
+    async function captureSystemAudio() {
+        try {
+            // Capture l'audio de l'ordinateur via l'API de partage d'écran
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: { displaySurface: "browser" },
+                audio: { echoCancellation: false }
+            });
 
-    function updateHover(x, y) {
-        document.querySelectorAll('.app-btn, .back-btn, input').forEach(el => {
-            const r = el.getBoundingClientRect();
-            if (x > r.left && x < r.right && y > r.top && y < r.bottom) el.style.boxShadow = "0 0 20px #007AFF";
-            else el.style.boxShadow = "none";
-        });
-    }
-
-    function triggerClick(x, y) {
-        const target = document.elementFromPoint(x, y);
-        if (target) target.click();
-    }
-
-    // --- MUSIQUE FONCTIONNELLE (Visualizer) ---
-    function initAudio() {
-        const canvas = document.getElementById('visualizer');
-        const ctx = canvas.getContext('2d');
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const source = audioCtx.createMediaStreamSource(stream);
-            const analyser = audioCtx.createAnalyser();
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioContext.createMediaStreamSource(stream);
+            const analyser = audioContext.createAnalyser();
             source.connect(analyser);
-            analyser.fftSize = 256;
+            analyser.fftSize = 512;
+            
             const bufferLength = analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
+            const canvas = document.getElementById('viz');
+            const canvasCtx = canvas.getContext('2d');
 
             function draw() {
                 requestAnimationFrame(draw);
                 analyser.getByteFrequencyData(dataArray);
-                ctx.fillStyle = '#000';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                let barWidth = (canvas.width / bufferLength) * 2.5;
+                canvasCtx.fillStyle = '#000';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                const barWidth = (canvas.width / bufferLength) * 2;
                 let x = 0;
-                for(let i = 0; i < bufferLength; i++) {
-                    let barHeight = dataArray[i]/2;
-                    ctx.fillStyle = `rgb(0, 122, 255)`;
-                    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = dataArray[i];
+                    canvasCtx.fillStyle = `hsl(${i + 200}, 80%, 60%)`;
+                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
                     x += barWidth + 1;
                 }
             }
             draw();
+            document.getElementById('music-title').innerText = "Lecture System Audio Active 🔊";
+        } catch (err) {
+            console.error("Erreur capture audio : ", err);
+        }
+    }
+
+    // --- INTERFACE ---
+    function openApp(id) {
+        document.getElementById('win-' + id).classList.add('active');
+        document.getElementById('home').style.filter = "blur(10px)";
+    }
+    function closeApp() {
+        document.querySelectorAll('.window').forEach(w => w.classList.remove('active'));
+        document.getElementById('home').style.filter = "none";
+    }
+    function handleHover(x, y) {
+        document.querySelectorAll('.app-card, button, input').forEach(el => {
+            const r = el.getBoundingClientRect();
+            if (x > r.left && x < r.right && y > r.top && y < r.bottom) el.classList.add('hover');
+            else el.classList.remove('hover');
         });
     }
 
-    // --- RÉGLAGES FONCTIONNELS ---
-    brightness.oninput = () => {
-        document.body.style.filter = `brightness(${brightness.value}%)`;
-    };
+    smoothSlider.oninput = () => { lerpFactor = smoothSlider.value / 100; };
 
-    // --- CAMÉRA ---
+    // --- CAMERA ---
     async function start() {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        isMirror = (stream.getVideoTracks()[0].getSettings().facingMode === 'user' || !stream.getVideoTracks()[0].getSettings().facingMode);
         document.getElementById('video_in').srcObject = stream;
-        new Camera(document.getElementById('video_in'), {
-            onFrame: async () => { await hands.send({ image: document.getElementById('video_in') }); }
-        }).start();
+        const camera = new Camera(document.getElementById('video_in'), {
+            onFrame: async () => { await hands.send({ image: document.getElementById('video_in') }); },
+            width: 1280, height: 720
+        });
+        camera.start();
     }
     start();
 </script>
