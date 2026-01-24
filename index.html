@@ -2,202 +2,184 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Material Hand-OS</title>
+    <title>Functional Hand-OS v2.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #bb86fc;
-            --bg: #121212;
-            --surface: #1e1e1e;
+            --primary: #007AFF; /* Bleu iOS/Material */
+            --bg: #000000;
+            --card: #1C1C1E;
+            --text: #FFFFFF;
         }
         body {
-            margin: 0; background: var(--bg); color: white;
-            font-family: 'Roboto', sans-serif; overflow: hidden;
-            height: 100vh; display: flex; flex-direction: column;
+            margin: 0; background: var(--bg); color: var(--text);
+            font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh;
         }
 
-        /* Curseur de précision */
+        /* Curseur Stabilisé */
         #cursor {
-            position: fixed; width: 20px; height: 20px;
-            border: 3px solid var(--primary); border-radius: 50%;
-            pointer-events: none; z-index: 9999;
-            box-shadow: 0 0 10px var(--primary);
-            transition: transform 0.1s ease;
+            position: fixed; width: 24px; height: 24px;
+            border: 2px solid var(--text); border-radius: 50%;
+            pointer-events: none; z-index: 10000;
+            box-shadow: 0 0 15px rgba(255,255,255,0.3);
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            mix-blend-mode: difference;
         }
-        #cursor.active { background: var(--primary); transform: scale(0.7); }
+        #cursor.clicking { transform: scale(0.6); background: var(--primary); border-color: var(--primary); }
 
-        /* Barre d'état */
-        .status-bar {
-            padding: 20px 40px; display: flex; justify-content: space-between;
-            background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);
-        }
-
-        /* Conteneur d'applications */
-        .app-container {
-            flex-grow: 1; display: flex; align-items: center; justify-content: center;
-            gap: 30px; padding: 50px;
+        /* Dashboard */
+        .desktop {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;
+            padding: 100px; height: 100%; align-content: center;
         }
 
-        .card {
-            background: var(--surface); width: 220px; height: 280px;
-            border-radius: 24px; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(255,255,255,0.1);
+        .app-icon {
+            background: var(--card); border-radius: 24px; padding: 40px;
+            text-align: center; cursor: pointer; border: 2px solid transparent;
+            transition: all 0.3s ease;
         }
-        .card.hover { transform: translateY(-15px); border-color: var(--primary); box-shadow: 0 10px 30px rgba(187, 134, 252, 0.2); }
-        .card i { font-size: 50px; margin-bottom: 20px; }
+        .app-icon.hover { transform: scale(1.05); border-color: var(--primary); background: #2C2C2E; }
+        .app-icon h2 { margin: 15px 0 0; font-weight: 500; font-size: 1.2rem; }
 
-        /* Fenêtre Application */
-        #app-window {
-            position: fixed; top: 10%; left: 10%; width: 80%; height: 75%;
-            background: var(--surface); border-radius: 24px; display: none;
-            flex-direction: column; padding: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        /* Fenêtres */
+        .window {
+            position: fixed; inset: 50px; background: var(--card);
+            border-radius: 32px; display: none; flex-direction: column;
+            padding: 40px; z-index: 500; box-shadow: 0 0 100px rgba(0,0,0,0.8);
         }
-        .back-btn { padding: 10px 20px; background: #333; border-radius: 10px; align-self: flex-start; }
+        .window.active { display: flex; }
+        .close-btn { 
+            position: absolute; top: 30px; left: 30px; padding: 10px 20px;
+            background: #3A3A3C; border-radius: 12px; font-weight: bold;
+        }
 
-        #video_input { display: none; }
+        #video_stream { display: none; }
     </style>
 </head>
 <body>
 
     <div id="cursor"></div>
 
-    <div class="status-bar">
-        <div id="clock">12:00</div>
-        <div id="gesture-status">Recherche de la main...</div>
-    </div>
-
-    <div class="app-container" id="home-screen">
-        <div class="card" id="app-music" onclick="openApp('Musique', '🎵 Lecture : Lo-Fi Summer Chill')">
-            <i>🎵</i>
-            <h3>Musique</h3>
+    <div class="desktop" id="desktop">
+        <div class="app-icon" data-target="win-music">
+            <span style="font-size: 50px">🎵</span>
+            <h2>Musique</h2>
         </div>
-        <div class="card" id="app-web" onclick="openApp('Navigateur', '🌐 wikipedia.org chargé')">
-            <i>🌐</i>
-            <h3>Web</h3>
+        <div class="app-icon" data-target="win-browser">
+            <span style="font-size: 50px">🌐</span>
+            <h2>Browser</h2>
         </div>
-        <div class="card" id="app-settings" onclick="openApp('Réglages', '⚙️ Volume : 80% | WiFi : Connecté')">
-            <i>⚙️</i>
-            <h3>Réglages</h3>
+        <div class="app-icon" data-target="win-settings">
+            <span style="font-size: 50px">⚙️</span>
+            <h2>Settings</h2>
         </div>
     </div>
 
-    <div id="app-window">
-        <div class="back-btn" id="close-btn">← RETOUR</div>
-        <h1 id="window-title" style="color: var(--primary);">Titre</h1>
-        <div id="window-content" style="font-size: 1.2em; margin-top: 20px;">Contenu</div>
+    <div class="window" id="app-window">
+        <div class="close-btn" id="close-btn">← RETOUR</div>
+        <h1 id="win-title" style="margin-top: 60px; font-size: 3rem;">App</h1>
+        <div id="win-content" style="font-size: 1.5rem; color: #8E8E93;"></div>
     </div>
 
-    <video id="video_input" autoplay playsinline></video>
+    <video id="video_stream" autoplay playsinline></video>
 
     <script>
         const cursor = document.getElementById('cursor');
-        const cards = document.querySelectorAll('.card');
+        const desktop = document.getElementById('desktop');
         const appWindow = document.getElementById('app-window');
         
         let isMirror = true;
-        let curX = 0, curY = 0;
-        let tgtX = 0, tgtY = 0;
-        const lerp = 0.15; // Puissance du lissage (0.1 = très stable)
-        let canClick = true;
+        let cX = 0, cY = 0; // Coordonnées actuelles lissées
+        const smoothing = 0.2; // Entre 0.1 (très lent/stable) et 1 (réactif/tremblant)
+        let isPinching = false;
+        let lastClickTime = 0;
 
-        // --- 1. CONFIGURATION IA ---
+        // --- Configuration MediaPipe ---
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
         hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
 
+        
+
         hands.onResults((results) => {
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                document.getElementById('gesture-status').innerText = "Main détectée ✅";
                 const landmark = results.multiHandLandmarks[0][8]; // Index tip
                 const thumb = results.multiHandLandmarks[0][4]; // Thumb tip
 
-                // Conversion coordonnées IA vers écran
-                let rawX = isMirror ? (1 - landmark.x) : landmark.x;
-                tgtX = rawX * window.innerWidth;
-                tgtY = landmark.y * window.innerHeight;
+                // 1. Calcul des positions avec inversion miroir
+                let targetX = (isMirror ? 1 - landmark.x : landmark.x) * window.innerWidth;
+                let targetY = landmark.y * window.innerHeight;
 
-                // Lissage exponentiel (Lerp) pour la stabilité
-                curX += (tgtX - curX) * lerp;
-                curY += (tgtY - curY) * lerp;
+                // 2. Lissage (Interpolation linéaire)
+                cX += (targetX - cX) * smoothing;
+                cY += (targetY - cY) * smoothing;
 
-                cursor.style.left = curX + 'px';
-                cursor.style.top = curY + 'px';
+                cursor.style.left = `${cX}px`;
+                cursor.style.top = `${cY}px`;
 
-                // Détection du Pincement (Distance Index-Pouce)
-                const dist = Math.hypot(landmark.x - thumb.x, landmark.y - thumb.y);
-                if (dist < 0.05) {
-                    cursor.classList.add('active');
-                    handleInteraction(curX, curY);
+                // 3. Détection du clic (Pinch)
+                const distance = Math.hypot(landmark.x - thumb.x, landmark.y - thumb.y);
+                
+                if (distance < 0.045) { // Seuil de pincement
+                    if (!isPinching) {
+                        isPinching = true;
+                        cursor.classList.add('clicking');
+                        executeClick(cX, cY);
+                    }
                 } else {
-                    cursor.classList.remove('active');
-                    canClick = true;
-                    handleHover(curX, curY);
+                    isPinching = false;
+                    cursor.classList.remove('clicking');
+                    highlightHover(cX, cY);
                 }
-            } else {
-                document.getElementById('gesture-status').innerText = "Main perdue ❌";
             }
         });
 
-        // --- 2. LOGIQUE D'INTERACTION ---
-        function handleHover(x, y) {
-            const elements = [ ...cards, document.getElementById('close-btn') ];
-            elements.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                if (x > rect.left && x < rect.right && y > rect.top && y < rect.bottom) {
-                    el.classList.add('hover');
-                    if (el.style) el.style.background = "#2c2c2c";
+        // --- Logique Fonctionnelle ---
+        function highlightHover(x, y) {
+            const icons = document.querySelectorAll('.app-icon, .close-btn');
+            icons.forEach(icon => {
+                const r = icon.getBoundingClientRect();
+                if (x > r.left && x < r.right && y > r.top && y < r.bottom) {
+                    icon.classList.add('hover');
                 } else {
-                    el.classList.remove('hover');
-                    if (el.style && el.id !== 'close-btn') el.style.background = "";
+                    icon.classList.remove('hover');
                 }
             });
         }
 
-        function handleInteraction(x, y) {
-            if (!canClick) return;
-            const target = document.elementFromPoint(x, y);
-            const clickable = target ? target.closest('.card, .back-btn') : null;
+        function executeClick(x, y) {
+            const now = Date.now();
+            if (now - lastClickTime < 600) return; // Anti-double clic involontaire
             
-            if (clickable) {
-                clickable.click();
-                canClick = false; // Bloque le clic jusqu'au relâchement
+            const target = document.elementFromPoint(x, y);
+            const btn = target ? target.closest('.app-icon, .close-btn') : null;
+
+            if (btn) {
+                if (btn.id === 'close-btn') {
+                    appWindow.classList.remove('active');
+                } else {
+                    const appName = btn.querySelector('h2').innerText;
+                    document.getElementById('win-title').innerText = appName;
+                    document.getElementById('win-content').innerText = `Chargement de l'interface ${appName}...`;
+                    appWindow.classList.add('active');
+                }
+                lastClickTime = now;
             }
         }
 
-        // --- 3. FONCTIONS DES APPS ---
-        function openApp(title, content) {
-            document.getElementById('window-title').innerText = title;
-            document.getElementById('window-content').innerText = content;
-            appWindow.style.display = 'flex';
-            document.getElementById('home-screen').style.opacity = '0.2';
-        }
-
-        document.getElementById('close-btn').onclick = () => {
-            appWindow.style.display = 'none';
-            document.getElementById('home-screen').style.opacity = '1';
-        };
-
-        // --- 4. INITIALISATION ---
+        // --- Init Caméra ---
         async function start() {
             const stream = await navigator.mediaDevices.getUserMedia({video: { facingMode: "environment" }});
             const settings = stream.getVideoTracks()[0].getSettings();
             isMirror = (settings.facingMode === 'user' || !settings.facingMode);
             
-            const videoElement = document.getElementById('video_input');
-            videoElement.srcObject = stream;
-            const camera = new Camera(videoElement, {
-                onFrame: async () => { await hands.send({image: videoElement}); },
+            document.getElementById('video_stream').srcObject = stream;
+            const camera = new Camera(document.getElementById('video_stream'), {
+                onFrame: async () => { await hands.send({image: document.getElementById('video_stream')}); },
                 width: 1280, height: 720
             });
             camera.start();
-            
-            // Horloge
-            setInterval(() => {
-                document.getElementById('clock').innerText = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            }, 1000);
         }
 
         start();
