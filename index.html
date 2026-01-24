@@ -1,170 +1,81 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Hand Game Party - 3 en 1</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: 'Arial', sans-serif; overflow: hidden; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 5; }
-        video { display: none; }
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; text-align: center; background: rgba(0,0,0,0.8); padding: 30px; border-radius: 20px; border: 2px solid #00d2ff; }
-        button { background: #00d2ff; border: none; padding: 15px 30px; margin: 10px; font-size: 18px; border-radius: 10px; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #fff; color: #00d2ff; }
-        #ui { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 8; font-size: 24px; pointer-events: none; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        canvas { position: absolute; }
+        #score { position: absolute; top: 20px; width: 100%; text-align: center; color: #0ff; font-size: 40px; text-shadow: 0 0 10px #0ff; z-index: 10; }
     </style>
 </head>
 <body>
-
-    <div id="ui">
-        <div id="score">Score: 0</div>
-        <div id="timer">Prêt ?</div>
-    </div>
-
-    <div id="menu">
-        <h1>HAND GAME PARTY</h1>
-        <p>Choisissez votre défi :</p>
-        <button onclick="startGame('ninja')">Fruit Ninja (Trancher)</button>
-        <button onclick="startGame('bubbles')">Bubble Pop (Éclater)</button>
-        <button onclick="startGame('lava')">Lava Floor (Éviter)</button>
-    </div>
-
-    <video id="input_video"></video>
+    <div id="score">0</div>
+    <video id="input_video" style="display:none"></video>
     <canvas id="output_canvas"></canvas>
 
     <script>
-        const videoElement = document.getElementById('input_video');
-        const canvasElement = document.getElementById('output_canvas');
-        const canvasCtx = canvasElement.getContext('2d');
-        const menu = document.getElementById('menu');
-        
-        let currentGame = null;
+        const canvas = document.getElementById('output_canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+
         let score = 0;
-        let objects = [];
-        let handPos = { x: 0, y: 0 };
-        let lastHandPos = { x: 0, y: 0 };
+        let notes = [];
+        const lanes = [canvas.width * 0.25, canvas.width * 0.5, canvas.width * 0.75];
+        let handX = 0;
 
-        function resize() {
-            canvasElement.width = window.innerWidth;
-            canvasElement.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        function startGame(type) {
-            currentGame = type;
-            score = 0;
-            objects = [];
-            menu.style.display = 'none';
-            document.getElementById('score').innerText = `Score: 0`;
-            
-            // Spawn initial pour certains jeux
-            if(type === 'lava') {
-                for(let i=0; i<3; i++) spawnObject();
-            }
+        function spawnNote() {
+            notes.push({ x: lanes[Math.floor(Math.random() * 3)], y: -50, speed: 7 });
         }
 
-        function spawnObject() {
-            if (currentGame === 'ninja' || currentGame === 'bubbles') {
-                objects.push({
-                    x: Math.random() * canvasElement.width,
-                    y: canvasElement.height + 50,
-                    speedY: currentGame === 'ninja' ? -12 - Math.random()*5 : -3 - Math.random()*2,
-                    speedX: (Math.random() - 0.5) * 4,
-                    radius: 30 + Math.random() * 20,
-                    color: `hsl(${Math.random() * 360}, 70%, 60%)`
-                });
-            } else if (currentGame === 'lava') {
-                objects.push({
-                    x: Math.random() * canvasElement.width,
-                    y: Math.random() * canvasElement.height,
-                    radius: 60 + Math.random() * 40,
-                    pulse: 0
-                });
-            }
-        }
+        function draw() {
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        function updateGame() {
-            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-            
-            if (!currentGame) return;
+            // Dessiner les rails
+            lanes.forEach(x => {
+                ctx.strokeStyle = '#333';
+                ctx.strokeRect(x - 40, 0, 80, canvas.height);
+            });
 
-            // Logique de spawn
-            if (Math.random() < 0.03 && (currentGame === 'ninja' || currentGame === 'bubbles')) spawnObject();
-
-            for (let i = objects.length - 1; i >= 0; i--) {
-                let obj = objects[i];
-
-                if (currentGame === 'ninja' || currentGame === 'bubbles') {
-                    obj.y += obj.speedY;
-                    obj.x += obj.speedX;
-                    if (currentGame === 'ninja') obj.speedY += 0.15; // Gravité
-
-                    // Dessin
-                    canvasCtx.beginPath();
-                    canvasCtx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
-                    canvasCtx.fillStyle = obj.color;
-                    canvasCtx.fill();
-
-                    // Collision
-                    let dist = Math.hypot(handPos.x - obj.x, handPos.y - obj.y);
-                    let speed = Math.hypot(handPos.x - lastHandPos.x, handPos.y - lastHandPos.y);
-
-                    if (dist < obj.radius) {
-                        if (currentGame === 'bubbles' || (currentGame === 'ninja' && speed > 15)) {
-                            score += 10;
-                            objects.splice(i, 1);
-                            document.getElementById('score').innerText = `Score: ${score}`;
-                            continue;
-                        }
-                    }
-
-                    if (obj.y > canvasElement.height + 100 || obj.y < -200) objects.splice(i, 1);
-                } 
-                else if (currentGame === 'lava') {
-                    obj.pulse += 0.05;
-                    let currentRadius = obj.radius + Math.sin(obj.pulse) * 10;
-                    
-                    canvasCtx.beginPath();
-                    canvasCtx.arc(obj.x, obj.y, currentRadius, 0, Math.PI * 2);
-                    canvasCtx.fillStyle = 'rgba(255, 69, 0, 0.6)';
-                    canvasCtx.fill();
-
-                    let dist = Math.hypot(handPos.x - obj.x, handPos.y - obj.y);
-                    if (dist < currentRadius) {
-                        score -= 1;
-                        document.getElementById('score').innerText = `OUCH! Score: ${score}`;
+            // Gérer les notes
+            notes.forEach((n, i) => {
+                n.y += n.speed;
+                ctx.fillStyle = '#0ff';
+                ctx.shadowBlur = 15; ctx.shadowColor = '#0ff';
+                ctx.fillRect(n.x - 30, n.y, 60, 20);
+                
+                // Detection collision zone basse (entre 80% et 90% de l'écran)
+                if (n.y > canvas.height * 0.8 && n.y < canvas.height * 0.9) {
+                    if (Math.abs(handX - n.x) < 50) {
+                        score += 10;
+                        scoreEl.innerText = score;
+                        notes.splice(i, 1);
                     }
                 }
-            }
+                if (n.y > canvas.height) notes.splice(i, 1);
+            });
 
-            // Dessiner le pointeur
-            canvasCtx.beginPath();
-            canvasCtx.arc(handPos.x, handPos.y, 10, 0, Math.PI * 2);
-            canvasCtx.fillStyle = "white";
-            canvasCtx.fill();
+            // Curseur main
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(handX, canvas.height * 0.85, 20, 0, Math.PI*2); ctx.fill();
         }
 
-        function onResults(results) {
-            lastHandPos = {...handPos};
-            if (results.multiHandLandmarks && results.multiHandLandmarks[0]) {
-                const landmark = results.multiHandLandmarks[0][8];
-                handPos.x = (1 - landmark.x) * canvasElement.width;
-                handPos.y = landmark.y * canvasElement.height;
-            }
-            updateGame();
-        }
+        setInterval(spawnNote, 1000);
 
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
-        hands.onResults(onResults);
-
-        const camera = new Camera(videoElement, {
-            onFrame: async () => { await hands.send({image: videoElement}); },
-            width: 1280, height: 720
+        hands.onResults(res => {
+            if (res.multiHandLandmarks?.[0]) {
+                handX = (1 - res.multiHandLandmarks[0][8].x) * canvas.width;
+            }
+            draw();
         });
-        camera.start();
+
+        new Camera(document.getElementById('input_video'), {
+            onFrame: async () => { await hands.send({image: document.getElementById('input_video')}); },
+            width: 640, height: 480
+        }).start();
     </script>
 </body>
 </html>
