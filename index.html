@@ -1,117 +1,47 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Interactions VR Mains - Cardboard</title>
-
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; }
-        #loading-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); color: white; display: flex;
-            align-items: center; justify-content: center; z-index: 9999;
-            font-family: sans-serif;
-        }
+        body { margin: 0; }
+        #input_video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; }
     </style>
 </head>
 <body>
+    <video id="input_video" autoplay playsinline></video>
 
-    <div id="loading-screen">Chargement de l'IA...</div>
-
-    <a-scene vr-mode-ui="enabled: true">
-        <a-assets>
-            <a-mixin id="cube" geometry="primitive: box; width: 0.2; height: 0.2; depth: 0.2"></a-mixin>
-        </a-assets>
-
-        <a-sky color="#222"></a-sky>
-        <a-grid position="0 0 0"></a-grid>
-
-        <a-entity id="hand-cursor">
-            <a-sphere radius="0.05" color="#FF0000" emissive="#FF0000" emissiveIntensity="2"></a-sphere>
-            <a-light type="point" intensity="0.5" distance="2" color="red"></a-light>
-        </a-entity>
-
-        <a-box id="target-box" position="0 1.5 -2" color="#4CC3D9" animation="property: rotation; to: 0 360 0; loop: true; dur: 5000"></a-box>
-
-        <a-entity id="rig" position="0 0 0">
-            <a-camera id="main-cam" look-controls="enabled: true" wasd-controls-enabled="false"></a-camera>
-        </a-entity>
+    <a-scene>
+        <a-sphere id="cursor" radius="0.05" color="red"></a-sphere>
+        <a-box id="box" position="0 1.5 -2" color="blue"></a-box>
+        <a-sky opacity="0"></a-sky>
     </a-scene>
-
-    <video id="input_video" style="display:none;"></video>
 
     <script>
         const videoElement = document.getElementById('input_video');
-        const handCursor = document.getElementById('hand-cursor');
-        const loadingScreen = document.getElementById('loading-screen');
-        const targetBox = document.getElementById('target-box');
+        const cursor = document.getElementById('cursor');
 
-        // Initialisation de MediaPipe Hands
-        const hands = new Hands({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-        });
-
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7
-        });
-
-        // Schéma des points de la main (le point 8 est le bout de l'index)
-        // 
+        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+        hands.setOptions({maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.5});
 
         hands.onResults((results) => {
-            loadingScreen.style.display = "none"; // Cacher l'écran de chargement au premier résultat
-
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const hand = results.multiHandLandmarks[0];
-                const indexTip = hand[8]; // Bout de l'index
-                const thumbTip = hand[4]; // Bout du pouce
-
-                // Conversion des coordonnées 2D caméra en 3D VR
-                // On projette sur un plan à environ 1.5m devant l'utilisateur
-                const x = (0.5 - indexTip.x) * 4; 
-                const y = (0.5 - indexTip.y) * 3 + 1.5; 
-                const z = -1.5;
-
-                handCursor.setAttribute('position', `${x} ${y} ${z}`);
-                handCursor.setAttribute('visible', 'true');
-
-                // DÉTECTION DE PINCE (Pouce + Index proche)
-                const distance = Math.sqrt(
-                    Math.pow(indexTip.x - thumbTip.x, 2) + 
-                    Math.pow(indexTip.y - thumbTip.y, 2)
-                );
-
-                if (distance < 0.05) {
-                    // Si on pince, la sphère devient verte et le cube change de couleur
-                    handCursor.querySelector('a-sphere').setAttribute('color', '#00FF00');
-                    targetBox.setAttribute('color', 'orange');
-                } else {
-                    handCursor.querySelector('a-sphere').setAttribute('color', '#FF0000');
-                    targetBox.setAttribute('color', '#4CC3D9');
-                }
+                const landmark = results.multiHandLandmarks[0][8]; // Index
+                const x = (0.5 - landmark.x) * 3;
+                const y = (0.5 - landmark.y) * 3 + 1.5;
+                cursor.setAttribute('position', `${x} ${y} -1.5`);
+                cursor.setAttribute('visible', 'true');
             } else {
-                handCursor.setAttribute('visible', 'false');
+                cursor.setAttribute('visible', 'false');
             }
         });
 
-        // Démarrage de la caméra mobile
         const camera = new Camera(videoElement, {
-            onFrame: async () => {
-                await hands.send({image: videoElement});
-            },
-            width: 1280,
-            height: 720
+            onFrame: async () => { await hands.send({image: videoElement}); },
+            width: 640, height: 480
         });
         camera.start();
-
     </script>
 </body>
 </html>
