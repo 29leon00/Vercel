@@ -1,81 +1,183 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
+    <meta charset="UTF-8">
+    <title>Hand Powers Arcade</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
-        canvas { position: absolute; }
-        #score { position: absolute; top: 20px; width: 100%; text-align: center; color: #0ff; font-size: 40px; text-shadow: 0 0 10px #0ff; z-index: 10; }
+        body { margin: 0; background: #000; color: #0ff; font-family: 'orbitron', sans-serif; overflow: hidden; }
+        canvas { position: absolute; top: 0; left: 0; }
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 10; pointer-events: none; }
+        #mode-indicator { font-size: 24px; color: #ff00ff; text-transform: uppercase; letter-spacing: 5px; }
+        video { display: none; }
+        #instructions { position: absolute; bottom: 20px; width: 100%; text-align: center; color: rgba(0,255,255,0.5); }
     </style>
 </head>
 <body>
-    <div id="score">0</div>
-    <video id="input_video" style="display:none"></video>
+
+    <div id="ui">
+        <div id="mode-indicator">Initialisation...</div>
+        <div id="score" style="font-size: 40px;">0</div>
+    </div>
+    
+    <div id="instructions">
+        INDEX POINTÉ = LASER | PAUME OUVERTE = BOUCLIER
+    </div>
+
+    <video id="input_video"></video>
     <canvas id="output_canvas"></canvas>
 
     <script>
         const canvas = document.getElementById('output_canvas');
         const ctx = canvas.getContext('2d');
-        const scoreEl = document.getElementById('score');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        const videoElement = document.getElementById('input_video');
+        const modeText = document.getElementById('mode-indicator');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
         let score = 0;
-        let notes = [];
-        const lanes = [canvas.width * 0.25, canvas.width * 0.5, canvas.width * 0.75];
-        let handX = 0;
+        let enemies = [];
+        let bullets = [];
+        let particles = [];
+        let handData = null;
 
-        function spawnNote() {
-            notes.push({ x: lanes[Math.floor(Math.random() * 3)], y: -50, speed: 7 });
+        class Enemy {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = -50;
+                this.size = 30 + Math.random() * 40;
+                this.speed = 2 + Math.random() * 5;
+                this.hp = Math.ceil(this.size / 20);
+            }
+            update() { this.y += this.speed; }
+            draw() {
+                ctx.strokeStyle = '#0ff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+            }
         }
 
-        function draw() {
-            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        class Bullet {
+            constructor(x, y) { this.x = x; this.y = y; this.speed = 15; }
+            update() { this.y -= this.speed; }
+            draw() {
+                ctx.fillStyle = '#f0f';
+                ctx.fillRect(this.x - 2, this.y, 4, 15);
+            }
+        }
+
+        function createExplosion(x, y, color) {
+            for(let i=0; i<8; i++) {
+                particles.push({
+                    x, y, 
+                    vx: (Math.random()-0.5)*10, 
+                    vy: (Math.random()-0.5)*10, 
+                    life: 1.0, 
+                    color
+                });
+            }
+        }
+
+        function onResults(results) {
+            ctx.fillStyle = 'rgba(0, 8, 20, 0.2)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Dessiner les rails
-            lanes.forEach(x => {
-                ctx.strokeStyle = '#333';
-                ctx.strokeRect(x - 40, 0, 80, canvas.height);
-            });
+            if (results.multiHandLandmarks && results.multiHandLandmarks[0]) {
+                const landmarks = results.multiHandLandmarks[0];
+                const indexTip = landmarks[8];
+                const indexBase = landmarks[5];
+                const middleTip = landmarks[12];
+                const thumbTip = landmarks[4];
 
-            // Gérer les notes
-            notes.forEach((n, i) => {
-                n.y += n.speed;
-                ctx.fillStyle = '#0ff';
-                ctx.shadowBlur = 15; ctx.shadowColor = '#0ff';
-                ctx.fillRect(n.x - 30, n.y, 60, 20);
-                
-                // Detection collision zone basse (entre 80% et 90% de l'écran)
-                if (n.y > canvas.height * 0.8 && n.y < canvas.height * 0.9) {
-                    if (Math.abs(handX - n.x) < 50) {
-                        score += 10;
-                        scoreEl.innerText = score;
-                        notes.splice(i, 1);
-                    }
+                const hX = (1 - indexTip.x) * canvas.width;
+                const hY = indexTip.y * canvas.height;
+
+                // LOGIQUE DES GESTES
+                // Si l'index est tendu mais pas le majeur = MODE LASER
+                const isPointing = indexTip.y < indexBase.y && middleTip.y > indexBase.y;
+                // Si tous les doigts sont plus hauts que la paume = MODE BOUCLIER
+                const isOpenPalm = indexTip.y < indexBase.y && middleTip.y < indexBase.y;
+
+                if (isOpenPalm && !isPointing) {
+                    modeText.innerText = "🛡️ BOUCLIER ACTIVÉ";
+                    ctx.beginPath();
+                    ctx.arc(hX, hY, 80, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+                    ctx.lineWidth = 5;
+                    ctx.stroke();
+                    
+                    // Collision bouclier
+                    enemies.forEach((e, i) => {
+                        if(Math.hypot(hX - e.x, hY - e.y) < 80 + e.size/2) {
+                            createExplosion(e.x, e.y, '#0ff');
+                            enemies.splice(i, 1);
+                            score += 5;
+                        }
+                    });
+                } else if (isPointing) {
+                    modeText.innerText = "🔫 LASER CHARGÉ";
+                    if(Math.random() > 0.8) bullets.push(new Bullet(hX, hY));
+                } else {
+                    modeText.innerText = "EN ATTENTE...";
                 }
-                if (n.y > canvas.height) notes.splice(i, 1);
+
+                // Dessin du curseur main
+                ctx.fillStyle = isPointing ? "#f0f" : "#0ff";
+                ctx.beginPath();
+                ctx.arc(hX, hY, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Update Bullets
+            bullets.forEach((b, bi) => {
+                b.update(); b.draw();
+                enemies.forEach((e, ei) => {
+                    if(Math.abs(b.x - e.x) < e.size/2 && Math.abs(b.y - e.y) < e.size/2) {
+                        e.hp--;
+                        bullets.splice(bi, 1);
+                        if(e.hp <= 0) {
+                            createExplosion(e.x, e.y, '#f0f');
+                            enemies.splice(ei, 1);
+                            score += 20;
+                        }
+                    }
+                });
             });
 
-            // Curseur main
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(handX, canvas.height * 0.85, 20, 0, Math.PI*2); ctx.fill();
+            // Update Enemies
+            if(Math.random() < 0.05) enemies.push(new Enemy());
+            enemies.forEach((e, i) => {
+                e.update(); e.draw();
+                if(e.y > canvas.height) {
+                    enemies.splice(i, 1);
+                    score = Math.max(0, score - 50); // Pénalité
+                }
+            });
+
+            // Update Particles
+            particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, 4, 4);
+                if(p.life <= 0) particles.splice(i, 1);
+            });
+            ctx.globalAlpha = 1;
+
+            document.getElementById('score').innerText = score;
         }
 
-        setInterval(spawnNote, 1000);
-
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        hands.onResults(res => {
-            if (res.multiHandLandmarks?.[0]) {
-                handX = (1 - res.multiHandLandmarks[0][8].x) * canvas.width;
-            }
-            draw();
-        });
+        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7 });
+        hands.onResults(onResults);
 
-        new Camera(document.getElementById('input_video'), {
-            onFrame: async () => { await hands.send({image: document.getElementById('input_video')}); },
-            width: 640, height: 480
-        }).start();
+        const camera = new Camera(videoElement, {
+            onFrame: async () => { await hands.send({image: videoElement}); },
+            width: 1280, height: 720
+        });
+        camera.start();
     </script>
 </body>
 </html>
