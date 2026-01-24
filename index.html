@@ -2,221 +2,154 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hand-OS Professional Edition</title>
+    <title>Hand-OS Gaming</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    
     <style>
-        :root { --bg: #0a0a0a; --panel: rgba(30, 30, 30, 0.9); --accent: #007AFF; --text: #ffffff; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica; background: #000; color: var(--text); overflow: hidden; }
+        :root { --accent: #34c759; --win-bg: #1c1c1e; }
+        body { margin: 0; background: #000; color: white; font-family: -apple-system, sans-serif; overflow: hidden; }
+        #desktop { width: 100vw; height: 100vh; background: radial-gradient(circle, #2c3e50, #000000); }
+        
+        /* IA & CURSEUR */
+        #cursor { position: fixed; width: 20px; height: 20px; border: 2px solid #fff; border-radius: 50%; pointer-events: none; z-index: 9999; mix-blend-mode: difference; }
+        #v-stream { position: fixed; top: 10px; right: 10px; width: 120px; border-radius: 10px; transform: scaleX(-1); opacity: 0.5; border: 1px solid #34c759; }
 
-        /* FOND D'ÉCRAN */
-        #desktop { width: 100%; height: 100%; background: url('https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070') center/cover; position: relative; }
+        /* FENÊTRE DE JEU */
+        #win { position: absolute; top: 5%; left: 5%; width: 90%; height: 80%; background: var(--win-bg); border-radius: 15px; display: none; flex-direction: column; border: 1px solid #333; box-shadow: 0 0 50px rgba(0,255,0,0.2); }
+        .win-head { padding: 15px; background: #2c2c2e; display: flex; justify-content: space-between; border-radius: 15px 15px 0 0; }
+        .win-body { flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #000; }
+        canvas { border: 2px solid #444; background: #000; max-width: 100%; max-height: 100%; }
 
-        /* CURSEUR ET FLUX VIDEO */
-        #cursor { position: fixed; width: 24px; height: 24px; border: 2px solid white; border-radius: 50%; pointer-events: none; z-index: 10000; mix-blend-mode: difference; transition: transform 0.1s; }
-        #cursor.pinched { transform: scale(0.5); background: var(--accent); }
-        #v-preview { position: fixed; top: 15px; right: 15px; width: 140px; border-radius: 12px; transform: scaleX(-1); border: 2px solid rgba(255,255,255,0.2); opacity: 0.6; z-index: 9000; }
-
-        /* BARRE DE TÂCHES / DOCK */
-        #dock { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); background: var(--panel); backdrop-filter: blur(20px); padding: 8px 15px; border-radius: 20px; display: flex; gap: 12px; z-index: 5000; border: 1px solid rgba(255,255,255,0.1); }
-        .dock-item { width: 48px; height: 48px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 28px; transition: 0.2s; }
-        .dock-item:hover { transform: translateY(-8px) scale(1.1); background: rgba(255,255,255,0.1); }
-
-        /* LAUNCHPAD (MENU APPS) */
-        #launchpad { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(30px); z-index: 4000; display: none; padding: 60px 10%; overflow-y: auto; }
-        .category-title { font-size: 24px; font-weight: bold; margin: 30px 0 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; color: var(--accent); }
-        .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 20px; }
-        .app-card { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 18px; text-align: center; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
-        .app-card:hover { background: rgba(255,255,255,0.15); border-color: var(--accent); }
-        .app-icon { font-size: 45px; margin-bottom: 8px; display: block; }
-
-        /* SYSTÈME DE FENÊTRES */
-        .window { position: absolute; top: 50px; left: 50px; width: 800px; height: 500px; background: #1e1e1e; border-radius: 12px; display: none; flex-direction: column; box-shadow: 0 30px 60px rgba(0,0,0,0.5); border: 1px solid #333; z-index: 1000; overflow: hidden; }
-        .win-header { background: #2d2d2d; padding: 12px; display: flex; align-items: center; border-bottom: 1px solid #111; }
-        .win-dot { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; margin-right: 15px; cursor: pointer; }
-        .win-title { font-size: 14px; font-weight: 600; flex: 1; text-align: center; margin-right: 27px; }
-        .win-content { flex: 1; padding: 0; overflow: auto; background: #1e1e1e; color: white; }
-
-        /* APPS SPÉCIFIQUES */
-        #writer-txt { width: 100%; height: 100%; background: #fff; color: #000; border: none; padding: 30px; font-size: 18px; line-height: 1.5; outline: none; }
-        .file-list-item { padding: 15px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; cursor: pointer; }
-        .file-list-item:hover { background: #2a2a2a; }
+        /* DOCK */
+        #dock { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); padding: 10px 20px; border-radius: 25px; display: flex; gap: 20px; }
+        .icon { font-size: 35px; cursor: pointer; transition: 0.3s; }
+        .icon:hover { transform: scale(1.3) rotate(5deg); }
+        .close-btn { color: #ff5f57; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="desktop">
     <div id="cursor"></div>
-    <video id="v-preview" autoplay playsinline></video>
+    <video id="v-stream" autoplay playsinline></video>
+
+    <div id="win">
+        <div class="win-head">
+            <span id="win-title">Game Center</span>
+            <span class="close-btn" onclick="stopGame()">QUITTER ✕</span>
+        </div>
+        <div id="win-body" class="win-body">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+    </div>
 
     <div id="dock">
-        <div class="dock-item" onclick="OS.toggleLaunchpad()" title="Launchpad">🚀</div>
-        <div class="dock-item" onclick="OS.openApp('finder')" title="Fichiers">📂</div>
-        <div class="dock-item" onclick="OS.openApp('writer')" title="Notes">📝</div>
-    </div>
-
-    <div id="launchpad">
-        <div id="apps-container"></div>
-    </div>
-
-    <div id="main-window" class="window">
-        <div class="win-header">
-            <div class="win-dot" onclick="OS.closeApp()"></div>
-            <div class="win-title" id="win-title">Application</div>
-        </div>
-        <div id="win-content" class="win-content"></div>
+        <div class="icon" onclick="startGame('snake')" title="Snake">🐍</div>
+        <div class="icon" onclick="startGame('pong')" title="Pong">🎾</div>
+        <div class="icon" onclick="alert('Score Snake: ' + (localStorage.getItem('snakeScore') || 0))">🏆</div>
     </div>
 </div>
 
 <script>
-/**
- * HAND-OS KERNEL
- * Gestion du stockage, des apps et de l'IA
- */
-const OS = {
-    // 1. BASE DE DONNÉES DES APPLICATIONS (Triées par catégories)
-    apps: [
-        { id: 'finder', name: 'Explorateur', icon: '📂', cat: 'Système', run: () => OS.ui.finder() },
-        { id: 'settings', name: 'Réglages', icon: '⚙️', cat: 'Système', run: () => OS.ui.settings() },
-        { id: 'writer', name: 'LibreText', icon: '📝', cat: 'Bureautique', run: () => OS.ui.writer() },
-        { id: 'mail', name: 'Courriel', icon: '✉️', cat: 'Bureautique', run: () => `<h3>Boîte de réception vide.</h3>` },
-        { id: 'calc', name: 'Calcul', icon: '🔢', cat: 'Bureautique', run: () => `<h3>Calculatrice</h3><input type="number" style="width:90%; font-size:30px">` },
-        { id: 'paint', name: 'Dessin', icon: '🎨', cat: 'Créativité', run: () => `<canvas id="pc" width="800" height="400" style="background:white"></canvas>` },
-        { id: 'camera', name: 'Photo', icon: '📸', cat: 'Créativité', run: () => `<h3>Capture Caméra</h3><button>Prendre Photo</button>` },
-        { id: 'music', name: 'Musique', icon: '🎵', cat: 'Créativité', run: () => `<h3>Mes Playlists</h3><p>Aucun son trouvé.</p>` },
-        { id: 'youtube', name: 'YouTube', icon: '📺', cat: 'Loisirs', run: () => `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0"></iframe>` },
-        { id: 'wiki', name: 'Wikipedia', icon: '📚', cat: 'Loisirs', run: () => `<iframe src="https://fr.m.wikipedia.org" style="width:100%;height:100%;border:none;"></iframe>` },
-        { id: 'game1', name: 'Pong Hand', icon: '🎾', cat: 'Jeux', run: () => `<h3>Chargement du jeu...</h3>` },
-        { id: 'game2', name: 'Snake', icon: '🐍', cat: 'Jeux', run: () => `<h3>Snake Mobile Ready</h3>` }
-    ],
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let currentGame = null;
+    let gameLoop = null;
+    let handPos = { x: 0, y: 0 };
 
-    // 2. LOGIQUE UI
-    ui: {
-        finder: () => {
-            const files = JSON.parse(localStorage.getItem('os-files') || '[]');
-            return `
-                <div style="padding:20px">
-                    <h3>Mes Documents (Stockage Permanent)</h3>
-                    ${files.length ? files.map(f => `<div class="file-list-item"><span>📄 ${f.name}</span> <small>${f.date}</small></div>`).join('') : '<p>Aucun fichier sauvegardé.</p>'}
-                </div>`;
-        },
-        writer: () => `
-            <div style="display:flex; flex-direction:column; height:100%">
-                <div style="padding:10px; background:#f0f0f0; border-bottom:1px solid #ccc; display:flex; gap:10px">
-                    <input id="filename" type="text" placeholder="Nom du fichier" value="Note_1.txt">
-                    <button onclick="OS.saveFile()">💾 Sauvegarder</button>
-                </div>
-                <textarea id="writer-txt" placeholder="Écrivez ici..."></textarea>
-            </div>`,
-        settings: () => `
-            <div style="padding:20px">
-                <h3>Réglages Système</h3>
-                <p>Version : 10.2.1 (Local Edition)</p>
-                <button onclick="localStorage.clear(); location.reload();" style="background:red; color:white; border:none; padding:10px; border-radius:5px">⚠️ Réinitialiser tout l'OS</button>
-            </div>`
-    },
+    // --- LOGIQUE DES JEUX ---
+    const Games = {
+        snake: {
+            sn: [{x:10, y:10}], dir: {x:0, y:0}, food: {x:15, y:15}, score: 0,
+            init() {
+                canvas.width = 400; canvas.height = 400;
+                this.sn = [{x:10, y:10}]; this.score = 0;
+            },
+            update() {
+                // Direction via la main (par rapport au centre du canvas)
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const relX = handPos.x - (window.innerWidth / 2);
+                const relY = handPos.y - (window.innerHeight / 2);
 
-    // 3. FONCTIONS SYSTÈME
-    init() {
-        this.renderLaunchpad();
-        this.initTracking();
-    },
-
-    renderLaunchpad() {
-        const categories = [...new Set(this.apps.map(a => a.cat))];
-        let html = '';
-        categories.forEach(cat => {
-            html += `<div class="category-title">${cat}</div><div class="app-grid">`;
-            this.apps.filter(a => a.cat === cat).forEach(app => {
-                html += `
-                    <div class="app-card" onclick="OS.openApp('${app.id}')">
-                        <span class="app-icon">${app.icon}</span>
-                        <span>${app.name}</span>
-                    </div>`;
-            });
-            html += `</div>`;
-        });
-        document.getElementById('apps-container').innerHTML = html;
-    },
-
-    toggleLaunchpad() {
-        const lp = document.getElementById('launchpad');
-        lp.style.display = (lp.style.display === 'block') ? 'none' : 'block';
-    },
-
-    openApp(id) {
-        const app = this.apps.find(a => a.id === id);
-        document.getElementById('win-title').innerText = app.name;
-        document.getElementById('win-content').innerHTML = app.run();
-        document.getElementById('main-window').style.display = 'flex';
-        document.getElementById('launchpad').style.display = 'none';
-    },
-
-    closeApp() { document.getElementById('main-window').style.display = 'none'; },
-
-    saveFile() {
-        const name = document.getElementById('filename').value;
-        const text = document.getElementById('writer-txt').value;
-        const files = JSON.parse(localStorage.getItem('os-files') || '[]');
-        files.push({ name, text, date: new Date().toLocaleDateString() });
-        localStorage.setItem('os-files', JSON.stringify(files));
-        alert("Fichier enregistré dans le stockage permanent !");
-    },
-
-    // 4. MOTEUR IA (STABILISÉ)
-    initTracking() {
-        const video = document.getElementById('v-preview');
-        const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-        
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
-
-        const cursor = document.getElementById('cursor');
-        let cX = 0, cY = 0, isPinched = false;
-
-        hands.onResults(results => {
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const landmark = results.multiHandLandmarks[0];
-                const indexTip = landmark[8];
-                const thumbTip = landmark[4];
-
-                // Calcul position lissée
-                let targetX = (1 - indexTip.x) * window.innerWidth;
-                let targetY = indexTip.y * window.innerHeight;
-                cX += (targetX - cX) * 0.25;
-                cY += (targetY - cY) * 0.25;
-
-                cursor.style.left = cX + 'px';
-                cursor.style.top = cY + 'px';
-
-                // Détection du clic (Pincement)
-                const distance = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-                if (distance < 0.05) {
-                    if (!isPinched) {
-                        isPinched = true;
-                        cursor.classList.add('pinched');
-                        const el = document.elementFromPoint(cX, cY);
-                        if (el) el.click();
-                    }
+                if (Math.abs(relX) > Math.abs(relY)) {
+                    this.dir = relX > 0 ? {x:1, y:0} : {x:-1, y:0};
                 } else {
-                    isPinched = false;
-                    cursor.classList.remove('pinched');
+                    this.dir = relY > 0 ? {x:0, y:1} : {x:0, y:-1};
                 }
+
+                let head = {x: this.sn[0].x + this.dir.x, y: this.sn[0].y + this.dir.y};
+                this.sn.unshift(head);
+                if(head.x === this.food.x && head.y === this.food.y) {
+                    this.score++;
+                    this.food = {x: Math.floor(Math.random()*20), y: Math.floor(Math.random()*20)};
+                } else { this.sn.pop(); }
+
+                // Dessin
+                ctx.fillStyle = "black"; ctx.fillRect(0,0,400,400);
+                ctx.fillStyle = "#34c759"; this.sn.forEach(p => ctx.fillRect(p.x*20, p.y*20, 18, 18));
+                ctx.fillStyle = "red"; ctx.fillRect(this.food.x*20, this.food.y*20, 18, 18);
+                
+                if(head.x<0 || head.x>19 || head.y<0 || head.y>19) stopGame();
             }
-        });
+        },
+        pong: {
+            p1: 150, b: {x:200, y:200, vx:4, vy:4},
+            init() { canvas.width = 600; canvas.height = 400; },
+            update() {
+                // La raquette suit la main en Y
+                const rect = canvas.getBoundingClientRect();
+                this.p1 = (handPos.y - rect.top) - 40;
 
-        const camera = new Camera(video, {
-            onFrame: async () => { await hands.send({image: video}); },
-            width: 640, height: 480
-        });
-        camera.start();
+                this.b.x += this.b.vx; this.b.y += this.b.vy;
+                if(this.b.y < 0 || this.b.y > 390) this.b.vy *= -1;
+                
+                // Collision raquette
+                if(this.b.x < 20 && this.b.y > this.p1 && this.b.y < this.p1 + 80) this.b.vx *= -1.1;
+                if(this.b.x > 580) this.b.vx *= -1;
+                if(this.b.x < 0) stopGame();
+
+                ctx.fillStyle = "black"; ctx.fillRect(0,0,600,400);
+                ctx.fillStyle = "white"; ctx.fillRect(10, this.p1, 10, 80); // Joueur
+                ctx.beginPath(); ctx.arc(this.b.x, this.b.y, 8, 0, Math.PI*2); ctx.fill(); // Balle
+            }
+        }
+    };
+
+    function startGame(type) {
+        if(gameLoop) clearInterval(gameLoop);
+        document.getElementById('win').style.display = 'flex';
+        currentGame = Games[type];
+        currentGame.init();
+        gameLoop = setInterval(() => currentGame.update(), 1000/15); // 15 FPS pour le style retro
     }
-};
 
-// DÉMARRAGE
-OS.init();
+    function stopGame() {
+        document.getElementById('win').style.display = 'none';
+        if(currentGame === Games.snake) localStorage.setItem('snakeScore', Games.snake.score);
+        clearInterval(gameLoop);
+        gameLoop = null;
+    }
+
+    // --- IA TRACKING ---
+    const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
+
+    hands.onResults(res => {
+        if (res.multiHandLandmarks && res.multiHandLandmarks[0]) {
+            const index = res.multiHandLandmarks[0][8];
+            handPos.x = (1 - index.x) * window.innerWidth;
+            handPos.y = index.y * window.innerHeight;
+            
+            document.getElementById('cursor').style.left = handPos.x + 'px';
+            document.getElementById('cursor').style.top = handPos.y + 'px';
+        }
+    });
+
+    const cam = new Camera(document.getElementById('v-stream'), {
+        onFrame: async () => { await hands.send({image: document.getElementById('v-stream')}); }
+    });
+    cam.start();
 </script>
 </body>
 </html>
