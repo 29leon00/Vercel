@@ -2,116 +2,124 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Hand-OS Pro v4.0</title>
+    <title>Hand-OS Master v5.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #007AFF; --bg: #0b0b0c; --surface: #1c1c1e; }
-        body { margin: 0; background: var(--bg); color: white; font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
-        
-        /* Curseur avec Inertie */
+        :root { --primary: #007AFF; --bg: #000; --panel: #1c1c1e; --text: #fff; }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; height: 100%; }
+
+        /* CURSEUR STABILISÉ */
         #cursor {
-            position: fixed; width: 20px; height: 20px; border: 2px solid white;
-            border-radius: 50%; pointer-events: none; z-index: 10000;
-            mix-blend-mode: difference; box-shadow: 0 0 10px rgba(255,255,255,0.5);
+            position: fixed; width: 24px; height: 24px; border: 2px solid #fff;
+            border-radius: 50%; pointer-events: none; z-index: 9999;
+            transition: transform 0.1s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            mix-blend-mode: difference;
         }
-        #cursor.pinch { transform: scale(0.6); background: var(--primary); border-color: var(--primary); }
+        #cursor.pinch { transform: scale(0.5); background: var(--primary); border-color: var(--primary); }
 
-        /* Interface Material */
-        .desktop { display: flex; justify-content: center; gap: 30px; padding-top: 15vh; }
-        .app-card {
-            background: var(--surface); padding: 25px; border-radius: 24px;
-            width: 140px; text-align: center; cursor: pointer; border: 1px solid #333;
-            transition: 0.3s cubic-bezier(0.2, 0, 0.2, 1);
-        }
-        .app-card.hover { transform: translateY(-10px); border-color: var(--primary); background: #2c2c2e; }
-
-        /* Windows */
-        .window {
-            position: fixed; inset: 40px; background: var(--surface); border-radius: 30px;
-            display: none; flex-direction: column; z-index: 500; overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.7); border: 1px solid #333;
-        }
-        .window.active { display: flex; }
-        .header { padding: 20px; background: rgba(255,255,255,0.05); display: flex; justify-content: space-between; }
-        .close-btn { background: #ff453a; width: 15px; height: 15px; border-radius: 50%; cursor: pointer; }
-
-        /* Audio Visualizer */
-        canvas { width: 100%; height: 250px; border-radius: 15px; background: #000; margin-top: 20px; }
+        /* DESKTOP & DOCK */
+        .desktop { height: 100vh; display: flex; flex-wrap: wrap; gap: 20px; padding: 40px; align-content: flex-start; }
+        .dock { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); padding: 10px 20px; border-radius: 20px; display: flex; gap: 15px; border: 1px solid rgba(255,255,255,0.2); }
         
-        #video_in { display: none; }
+        .app-icon { width: 70px; height: 70px; background: var(--panel); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 30px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .app-icon.hover { border-color: var(--primary); transform: scale(1.1); }
+
+        /* GESTIONNAIRE DE FENÊTRES */
+        .window { position: fixed; top: 100px; left: 100px; right: 100px; bottom: 100px; background: var(--panel); border-radius: 20px; display: none; flex-direction: column; box-shadow: 0 30px 60px rgba(0,0,0,0.8); border: 1px solid #333; z-index: 100; }
+        .window.active { display: flex; }
+        .win-header { padding: 15px; background: #2c2c2e; display: flex; justify-content: space-between; align-items: center; border-radius: 20px 20px 0 0; }
+        .close-dot { width: 12px; height: 12px; background: #ff453a; border-radius: 50%; cursor: pointer; }
+        .win-body { flex-grow: 1; padding: 20px; overflow: auto; }
+
+        /* APPS SPÉCIFIQUES */
+        #viz-canvas { width: 100%; height: 200px; background: #000; border-radius: 10px; }
+        #video-preview { position: fixed; top: 20px; right: 20px; width: 160px; height: 120px; border-radius: 10px; border: 2px solid #333; transform: scaleX(-1); object-fit: cover; }
     </style>
 </head>
 <body>
 
 <div id="cursor"></div>
+<video id="video-preview" autoplay playsinline></video>
 
-<div class="desktop" id="home">
-    <div class="app-card" onclick="openApp('music')"><h2>🎵</h2><p>Audio System</p></div>
-    <div class="app-card" onclick="openApp('web')"><h2>🌐</h2><p>Web Browser</p></div>
-    <div class="app-card" onclick="openApp('settings')"><h2>⚙️</h2><p>Réglages</p></div>
+<div class="desktop">
+    <div class="app-icon" data-app="music">🎵</div>
+    <div class="app-icon" data-app="browser">🌐</div>
+    <div class="app-icon" data-app="settings">⚙️</div>
+    <div class="app-icon" data-app="notes">📝</div>
 </div>
 
-<div class="window" id="win-music">
-    <div class="header"><div class="close-btn" onclick="closeApp()"></div><span>Audio Analyzer</span><div></div></div>
-    <div style="padding: 30px; text-align: center;">
-        <h2 id="music-title">Musique de l'ordinateur</h2>
-        <p>Cliquez sur "Capturer" et choisissez "Audio du système".</p>
-        <canvas id="viz"></canvas>
-        <button onclick="captureSystemAudio()" style="margin-top:20px; padding:12px 30px; background:var(--primary); color:white; border:none; border-radius:12px; font-weight:bold;">CAPTURER L'AUDIO</button>
+<div id="main-window" class="window">
+    <div class="win-header">
+        <div class="close-dot" onclick="closeApp()"></div>
+        <span id="win-title">Application</span>
+        <div style="width:12px"></div>
     </div>
+    <div id="win-body" class="win-body"></div>
 </div>
-
-<div class="window" id="win-web">
-    <div class="header"><div class="close-btn" onclick="closeApp()"></div><span>Navigateur</span><div></div></div>
-    <iframe id="browser" src="https://www.wikipedia.org" style="flex-grow:1; border:none;"></iframe>
-</div>
-
-<div class="window" id="win-settings">
-    <div class="header"><div class="close-btn" onclick="closeApp()"></div><span>Settings</span><div></div></div>
-    <div style="padding: 40px;">
-        <h3>Lissage du curseur (Inertie)</h3>
-        <input type="range" id="smooth-range" min="5" max="40" value="15" style="width:100%">
-        <h3>Mode Miroir</h3>
-        <button onclick="isMirror = !isMirror" style="padding:10px; background:#444; color:white; border:none; border-radius:8px;">Inverser Gauche/Droite</button>
-    </div>
-</div>
-
-<video id="video_in"></video>
 
 <script>
     const cursor = document.getElementById('cursor');
-    const smoothSlider = document.getElementById('smooth-range');
+    const win = document.getElementById('main-window');
+    const winTitle = document.getElementById('win-title');
+    const winBody = document.getElementById('win-body');
+    
+    let cX = 0, cY = 0, tx = 0, ty = 0;
+    const lerp = 0.15;
     let isMirror = true;
-    let cX = window.innerWidth/2, cY = window.innerHeight/2;
-    let lerpFactor = 0.15; // Lissage par défaut
 
-    // --- TRACKING MAINS ---
+    // --- LOGIQUE DES APPLICATIONS ---
+    const Apps = {
+        music: {
+            title: "Analyseur Audio Système",
+            render: () => `
+                <div style="text-align:center">
+                    <h3>Visualisation Temps Réel</h3>
+                    <canvas id="viz-canvas"></canvas><br>
+                    <button class="ui-btn" onclick="startAudio()">CAPTURER L'AUDIO DU SYSTÈME</button>
+                    <p style="font-size:12px;color:#888">Choisissez "Audio du système" lors du partage.</p>
+                </div>`
+        },
+        browser: {
+            title: "Navigateur Web",
+            render: () => `<iframe src="https://m.wikipedia.org" style="width:100%; height:100%; border:none; background:white;"></iframe>`
+        },
+        settings: {
+            title: "Paramètres OS",
+            render: () => `
+                <h3>Personnalisation</h3>
+                <label>Vitesse du curseur</label><br>
+                <input type="range" oninput="setLerp(this.value)" min="5" max="50" value="15" style="width:100%"><br><br>
+                <button class="ui-btn" onclick="toggleMirror()">Inverser l'axe miroir</button>`
+        },
+        notes: {
+            title: "Bloc-notes Rapide",
+            render: () => `<textarea style="width:100%; height:90%; background:transparent; color:white; border:none; font-size:18px;" placeholder="Écrivez ici..."></textarea>`
+        }
+    };
+
+    // --- MOTEUR DE GESTES ---
     const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
     hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
 
     
 
-    hands.onResults((res) => {
-        if (res.multiHandLandmarks && res.multiHandLandmarks.length > 0) {
-            const index = res.multiHandLandmarks[0][8];
-            const thumb = res.multiHandLandmarks[0][4];
+    hands.onResults(results => {
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            const index = results.multiHandLandmarks[0][8];
+            const thumb = results.multiHandLandmarks[0][4];
 
-            // Cible
-            let targetX = (isMirror ? 1 - index.x : index.x) * window.innerWidth;
-            let targetY = index.y * window.innerHeight;
+            tx = (isMirror ? 1 - index.x : index.x) * window.innerWidth;
+            ty = index.y * window.innerHeight;
 
-            // Stabilisation (Lerp)
-            cX += (targetX - cX) * lerpFactor;
-            cY += (targetY - cY) * lerpFactor;
+            cX += (tx - cX) * lerp;
+            cY += (ty - cY) * lerp;
 
             cursor.style.left = cX + 'px';
             cursor.style.top = cY + 'px';
 
-            // Click Logic
             const dist = Math.hypot(index.x - thumb.x, index.y - thumb.y);
-            if (dist < 0.045) {
+            if (dist < 0.04) {
                 if (!cursor.classList.contains('pinch')) {
                     cursor.classList.add('pinch');
                     const target = document.elementFromPoint(cX, cY);
@@ -119,83 +127,76 @@
                 }
             } else {
                 cursor.classList.remove('pinch');
-                handleHover(cX, cY);
+                detectHover(cX, cY);
             }
         }
     });
 
-    // --- AUDIO SYSTEME ---
-    async function captureSystemAudio() {
-        try {
-            // Capture l'audio de l'ordinateur via l'API de partage d'écran
-            const stream = await navigator.mediaDevices.getDisplayMedia({
-                video: { displaySurface: "browser" },
-                audio: { echoCancellation: false }
-            });
-
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const source = audioContext.createMediaStreamSource(stream);
-            const analyser = audioContext.createAnalyser();
-            source.connect(analyser);
-            analyser.fftSize = 512;
-            
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            const canvas = document.getElementById('viz');
-            const canvasCtx = canvas.getContext('2d');
-
-            function draw() {
-                requestAnimationFrame(draw);
-                analyser.getByteFrequencyData(dataArray);
-                canvasCtx.fillStyle = '#000';
-                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                const barWidth = (canvas.width / bufferLength) * 2;
-                let x = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    const barHeight = dataArray[i];
-                    canvasCtx.fillStyle = `hsl(${i + 200}, 80%, 60%)`;
-                    canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                    x += barWidth + 1;
-                }
-            }
-            draw();
-            document.getElementById('music-title').innerText = "Lecture System Audio Active 🔊";
-        } catch (err) {
-            console.error("Erreur capture audio : ", err);
-        }
-    }
-
-    // --- INTERFACE ---
+    // --- FONCTIONS SYSTÈME ---
     function openApp(id) {
-        document.getElementById('win-' + id).classList.add('active');
-        document.getElementById('home').style.filter = "blur(10px)";
+        const app = Apps[id];
+        winTitle.innerText = app.title;
+        winBody.innerHTML = app.render();
+        win.classList.add('active');
     }
-    function closeApp() {
-        document.querySelectorAll('.window').forEach(w => w.classList.remove('active'));
-        document.getElementById('home').style.filter = "none";
-    }
-    function handleHover(x, y) {
-        document.querySelectorAll('.app-card, button, input').forEach(el => {
+
+    function closeApp() { win.classList.remove('active'); }
+
+    function detectHover(x, y) {
+        document.querySelectorAll('.app-icon, .ui-btn, .close-dot').forEach(el => {
             const r = el.getBoundingClientRect();
             if (x > r.left && x < r.right && y > r.top && y < r.bottom) el.classList.add('hover');
             else el.classList.remove('hover');
         });
     }
 
-    smoothSlider.oninput = () => { lerpFactor = smoothSlider.value / 100; };
+    window.toggleMirror = () => isMirror = !isMirror;
+    window.setLerp = (val) => lerp = val / 100;
 
-    // --- CAMERA ---
-    async function start() {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        document.getElementById('video_in').srcObject = stream;
-        const camera = new Camera(document.getElementById('video_in'), {
-            onFrame: async () => { await hands.send({ image: document.getElementById('video_in') }); },
-            width: 1280, height: 720
-        });
-        camera.start();
-    }
-    start();
+    // --- AUDIO ANALYZER ---
+    window.startAudio = async () => {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
+        const audioCtx = new AudioContext();
+        const source = audioCtx.createMediaStreamSource(stream);
+        const analyser = audioCtx.createAnalyser();
+        source.connect(analyser);
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        const canvas = document.getElementById('viz-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function draw() {
+            if (!win.classList.contains('active')) return;
+            requestAnimationFrame(draw);
+            analyser.getByteFrequencyData(dataArray);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const barWidth = (canvas.width / bufferLength) * 2;
+            dataArray.forEach((v, i) => {
+                ctx.fillStyle = `hsl(${i * 2}, 100%, 50%)`;
+                ctx.fillRect(i * (barWidth + 1), canvas.height - v/2, barWidth, v/2);
+            });
+        }
+        draw();
+    };
+
+    // --- INIT ---
+    document.querySelectorAll('.app-icon').forEach(icon => {
+        icon.addEventListener('click', () => openApp(icon.dataset.app));
+    });
+
+    const videoElement = document.getElementById('video-preview');
+    const camera = new Camera(videoElement, {
+        onFrame: async () => { await hands.send({image: videoElement}); },
+        width: 1280, height: 720
+    });
+    camera.start();
 </script>
+
+<style>
+    .ui-btn { background: var(--primary); border: none; padding: 10px 20px; color: white; border-radius: 8px; cursor: pointer; margin-top: 10px; }
+    .hover { outline: 3px solid var(--primary); }
+</style>
+
 </body>
 </html>
