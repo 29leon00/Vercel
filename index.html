@@ -2,66 +2,65 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Hand-OS Master Edition</title>
+    <title>Hand-OS Master Infinite</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     <style>
-        :root { --mac-bg: rgba(0, 0, 0, 0.4); --mac-blur: blur(25px); --accent: #007AFF; --win-bg: rgba(28, 28, 30, 0.95); }
+        :root { --mac-bg: rgba(25, 25, 25, 0.85); --mac-blur: blur(25px); --accent: #007AFF; }
         body { 
             margin: 0; height: 100vh; overflow: hidden; color: white;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background: url('https://images.unsplash.com/photo-1496715044133-466f2056bb9e?auto=format&fit=crop&w=2000') center/cover;
+            font-family: -apple-system, system-ui, sans-serif;
+            background: url('https://images.unsplash.com/photo-1496715044133-47548c0a0eb4?auto=format&fit=crop&w=2000') center/cover;
         }
 
-        /* --- CURSEUR --- */
+        /* CURSEUR IA */
         #cursor {
-            position: fixed; width: 24px; height: 24px; border: 2px solid white;
+            position: fixed; width: 22px; height: 22px; border: 2px solid white;
             border-radius: 50%; pointer-events: none; z-index: 10000;
             mix-blend-mode: difference; transition: transform 0.1s;
         }
         #cursor.click { transform: scale(0.6); background: var(--accent); }
 
-        /* --- DOCK --- */
+        /* DOCK STYLE MACOS */
         .dock-wrapper { position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; }
         .dock {
             background: var(--mac-bg); backdrop-filter: var(--mac-blur);
-            padding: 8px 15px; border-radius: 22px; display: flex; gap: 12px;
-            border: 1px solid rgba(255,255,255,0.2); align-items: flex-end;
+            padding: 10px; border-radius: 20px; display: flex; gap: 15px;
+            border: 1px solid rgba(255,255,255,0.1); align-items: flex-end;
         }
         .dock-item {
-            width: 55px; height: 55px; border-radius: 14px; cursor: pointer;
+            width: 50px; height: 50px; border-radius: 12px; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            font-size: 32px; transition: all 0.2s cubic-bezier(0.12, 0, 0.39, 0);
+            font-size: 30px; transition: 0.2s cubic-bezier(0.12, 0, 0.39, 0);
             background: rgba(255,255,255,0.05);
         }
-        .dock-item:hover, .dock-item.active { width: 85px; height: 85px; font-size: 50px; margin: 0 5px; }
+        .dock-item.active { transform: scale(1.3) translateY(-10px); background: var(--accent); }
 
-        /* --- WINDOW MANAGER --- */
+        /* WINDOWS */
         .window {
-            position: fixed; top: 8%; left: 8%; width: 84%; height: 75%;
-            background: var(--win-bg); backdrop-filter: var(--mac-blur);
-            border-radius: 20px; display: none; flex-direction: column;
-            box-shadow: 0 50px 100px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.1);
+            position: fixed; top: 10%; left: 10%; width: 80%; height: 70%;
+            background: var(--mac-bg); backdrop-filter: var(--mac-blur);
+            border-radius: 18px; display: none; flex-direction: column;
+            box-shadow: 0 50px 100px rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1);
         }
-        .win-active { display: flex; }
-        .win-header { padding: 15px; background: rgba(0,0,0,0.2); display: flex; align-items: center; border-radius: 20px 20px 0 0; }
-        .win-close { width: 14px; height: 14px; background: #ff5f57; border-radius: 50%; cursor: pointer; margin-right: 20px; }
+        .win-header { padding: 15px; background: rgba(0,0,0,0.3); display: flex; align-items: center; border-radius: 18px 18px 0 0; }
+        .win-dot { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; margin-right: 10px; background: #ff5f57; }
         .win-content { flex: 1; overflow: auto; padding: 25px; }
 
-        /* --- APPS INTERFACE --- */
-        .file-grid, .store-grid { display: grid; grid-template-columns: repeat(auto-fill, 120px); gap: 25px; }
-        .app-card { text-align: center; cursor: pointer; padding: 15px; border-radius: 15px; transition: 0.2s; }
-        .app-card:hover { background: rgba(255,255,255,0.1); }
-        .app-card.installed { opacity: 0.5; filter: grayscale(1); pointer-events: none; }
+        /* APPS STYLE */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 20px; }
+        .card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .card:hover, .card.active { background: var(--accent); }
         
-        #writer-area { width: 100%; height: 85%; border: none; background: #fff; color: #000; padding: 30px; font-size: 19px; border-radius: 10px; resize: none; }
-        .save-btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 8px; margin-top: 10px; cursor: pointer; }
+        #paint-cvs { background: white; border-radius: 10px; cursor: crosshair; }
+        textarea { width: 100%; height: 80%; border-radius: 10px; padding: 15px; border: none; font-size: 16px; }
 
-        /* --- CLAVIER --- */
-        #kb { position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); display: none; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 15px; grid-template-columns: repeat(10, 45px); gap: 8px; z-index: 2000; backdrop-filter: blur(10px); }
-        .key { width: 45px; height: 45px; background: #444; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        /* KEYBOARD */
+        #kb { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); display: none; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 15px; grid-template-columns: repeat(10, 45px); gap: 6px; z-index: 2000; backdrop-filter: blur(10px); }
+        .key { width: 45px; height: 45px; background: #333; display: flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .key.active { background: var(--accent); }
 
-        #v-stream { position: fixed; top: 15px; right: 15px; width: 130px; border-radius: 12px; transform: scaleX(-1); opacity: 0.6; border: 2px solid rgba(255,255,255,0.2); }
+        #v-stream { position: fixed; top: 10px; right: 10px; width: 100px; border-radius: 10px; transform: scaleX(-1); opacity: 0.4; }
     </style>
 </head>
 <body>
@@ -71,17 +70,13 @@
 
 <div class="dock-wrapper">
     <div class="dock" id="main-dock">
-        <div class="dock-item" onclick="AppManager.open('finder')">📂</div>
-        <div class="dock-item" onclick="AppManager.open('writer')">📝</div>
-        <div class="dock-item" onclick="AppManager.open('store')">🏪</div>
-        <div class="dock-item" onclick="AppManager.open('settings')">⚙️</div>
-    </div>
+        </div>
 </div>
 
 <div id="os-window" class="window">
     <div class="win-header">
-        <div class="win-close" onclick="AppManager.close()"></div>
-        <span id="win-title" style="font-weight: bold; letter-spacing: 0.5px;">Finder</span>
+        <div class="win-dot" onclick="AppManager.close()"></div>
+        <span id="win-title" style="font-weight: 600;">System</span>
     </div>
     <div id="win-content" class="win-content"></div>
 </div>
@@ -90,140 +85,97 @@
 
 <script>
     const cursor = document.getElementById('cursor');
-    let isMirror = true;
-    let cX = 0, cY = 0;
+    let cX = 0, cY = 0, isMirror = true;
 
-    // --- SYSTÈME DE STOCKAGE PERSISTANT ---
-    const SystemStorage = {
-        saveFiles(files) { localStorage.setItem('handos_files', JSON.stringify(files)); },
-        getFiles() { return JSON.parse(localStorage.getItem('handos_files')) || [
-            { name: "Bienvenue.odt", content: "Bienvenue dans votre nouvel OS contrôlé par la main !", icon: "📄" }
-        ]; },
-        saveApps(apps) { localStorage.setItem('handos_installed', JSON.stringify(apps)); },
-        getApps() { return JSON.parse(localStorage.getItem('handos_installed')) || ['finder', 'writer', 'store', 'settings']; }
-    };
-
+    // --- 1. MOTEUR DE STOCKAGE & APPS ---
     const AppManager = {
-        current: null,
-        installed: SystemStorage.getApps(),
-        files: SystemStorage.getFiles(),
+        installed: JSON.parse(localStorage.getItem('installed-apps')) || ['finder', 'writer', 'store', 'settings'],
+        files: JSON.parse(localStorage.getItem('user-files')) || [{name: "Hello.txt", content: "Bienvenue sur Hand-OS"}],
         
-        // Catalogue d'apps à installer
-        repository: [
-            { id: 'web', title: 'Safari', icon: '🌐', desc: 'Navigateur Web' },
-            { id: 'paint', title: 'Paint', icon: '🎨', desc: 'Dessin' },
-            { id: 'music', title: 'Music', icon: '🎵', desc: 'Lecteur Audio' },
-            { id: 'calc', title: 'Calculatrice', icon: '🔢', desc: 'Outil math' }
-        ],
+        repo: {
+            finder: { name: "Finder", icon: "📂", render: () => AppManager.ui.finder() },
+            writer: { name: "Writer", icon: "📝", render: () => AppManager.ui.writer() },
+            store: { name: "App Store", icon: "🏪", render: () => AppManager.ui.store() },
+            paint: { name: "Paint", icon: "🎨", render: () => AppManager.ui.paint() },
+            music: { name: "Music", icon: "🎵", render: () => `<h3>Lecteur Audio</h3><p>Aucune piste en cours...</p>` },
+            calc: { name: "Calcul", icon: "🔢", render: () => `<h3>Calculatrice</h3><input type="number" style="font-size:30px; width:100%">` },
+            settings: { name: "Settings", icon: "⚙️", render: () => AppManager.ui.settings() }
+        },
 
-        open(id) {
-            this.current = id;
-            document.getElementById('os-window').classList.add('win-active');
-            document.getElementById('win-title').innerText = id.toUpperCase();
-            this.render();
-            document.getElementById('kb').style.display = (id === 'writer') ? 'grid' : 'none';
+        ui: {
+            finder: () => `<div class="grid">${AppManager.files.map(f => `<div class="card" onclick="AppManager.open('writer', '${f.content}')"><div>📄</div><small>${f.name}</small></div>`).join('')}</div>`,
+            writer: (content = "") => {
+                setTimeout(() => document.getElementById('kb').style.display = 'grid', 100);
+                return `<textarea id="editor">${content}</textarea><br><button onclick="AppManager.saveFile()">Sauvegarder dans le Cloud Local</button>`;
+            },
+            store: () => `<h3>Applications disponibles</h3><div class="grid">${Object.keys(AppManager.repo).map(id => `
+                <div class="card" onclick="AppManager.install('${id}')">
+                    <div>${AppManager.repo[id].icon}</div>
+                    <small>${AppManager.repo[id].name}</small>
+                    <div style="font-size:10px">${AppManager.installed.includes(id) ? 'INSTALLÉ' : 'INSTALLER'}</div>
+                </div>`).join('')}</div>`,
+            paint: () => `<canvas id="paint-cvs" width="600" height="300"></canvas>`,
+            settings: () => `<h3>Paramètres Système</h3><button onclick="isMirror=!isMirror">Inverser Caméra</button><br><br><button onclick="localStorage.clear(); location.reload();" style="background:red; color:white">Réinitialiser l'OS</button>`
+        },
+
+        init() {
+            const dock = document.getElementById('main-dock');
+            dock.innerHTML = this.installed.map(id => `<div class="dock-item" onclick="AppManager.open('${id}')">${this.repo[id].icon}</div>`).join('');
+        },
+        open(id, data = "") {
+            document.getElementById('os-window').style.display = 'flex';
+            document.getElementById('win-title').innerText = this.repo[id].name;
+            document.getElementById('win-content').innerHTML = this.repo[id].render(data);
         },
         close() { 
-            document.getElementById('os-window').classList.remove('win-active');
+            document.getElementById('os-window').style.display = 'none'; 
             document.getElementById('kb').style.display = 'none';
         },
         install(id) {
-            if (!this.installed.includes(id)) {
+            if(!this.installed.includes(id)) {
                 this.installed.push(id);
-                SystemStorage.saveApps(this.installed);
-                this.render();
-                alert("Application installée !");
+                localStorage.setItem('installed-apps', JSON.stringify(this.installed));
+                this.init();
             }
         },
         saveFile() {
-            const content = document.getElementById('writer-area').value;
-            const name = "Note_" + new Date().toLocaleTimeString() + ".odt";
-            this.files.push({ name, content, icon: "📄" });
-            SystemStorage.saveFiles(this.files);
-            alert("Fichier sauvegardé dans le Finder !");
-        },
-        render() {
-            const container = document.getElementById('win-content');
-            
-            if (this.current === 'finder') {
-                container.innerHTML = `<h3>Mes Documents</h3><div class="file-grid">${this.files.map(f => `
-                    <div class="app-card">
-                        <div style="font-size:45px">${f.icon}</div>
-                        <div style="font-size:13px; margin-top:5px">${f.name}</div>
-                    </div>`).join('')}</div>`;
-            } 
-            else if (this.current === 'writer') {
-                container.innerHTML = `
-                    <textarea id="writer-area" placeholder="Utilisez le clavier pour écrire..."></textarea>
-                    <button class="save-btn" onclick="AppManager.saveFile()">Enregistrer le fichier</button>
-                `;
-            }
-            else if (this.current === 'store') {
-                container.innerHTML = `<h3>App Store</h3><div class="store-grid">
-                    ${this.repository.map(app => `
-                        <div class="app-card ${this.installed.includes(app.id) ? 'installed' : ''}" onclick="AppManager.install('${app.id}')">
-                            <div style="font-size:45px">${app.icon}</div>
-                            <div style="font-weight:bold">${app.title}</div>
-                            <div style="font-size:11px; opacity:0.7">${app.desc}</div>
-                        </div>`).join('')}
-                </div>`;
-            }
-            else if (this.current === 'web') {
-                container.innerHTML = `<iframe src="https://m.wikipedia.org" style="width:100%;height:100%;border:none;border-radius:10px;background:white;"></iframe>`;
-            }
-            else if (this.current === 'settings') {
-                container.innerHTML = `<h3>Paramètres Système</h3>
-                    <p>Caméra : <span style="color: #34c759">Connectée</span></p>
-                    <button class="save-btn" onclick="isMirror=!isMirror">Inverser Effet Miroir</button>
-                    <button class="save-btn" style="background:#ff3b30" onclick="localStorage.clear(); location.reload();">Réinitialiser l'OS</button>`;
-            }
-            else {
-                container.innerHTML = `<div style="text-align:center; padding:50px"><h2>${this.current}</h2><p>L'application est en cours de chargement...</p></div>`;
-            }
+            const content = document.getElementById('editor').value;
+            const name = "Doc_" + Date.now() + ".txt";
+            this.files.push({name, content});
+            localStorage.setItem('user-files', JSON.stringify(this.files));
+            alert("Fichier sauvegardé !");
         }
     };
 
-    // --- CLAVIER VIRTUEL ---
+    // --- 2. CLAVIER ---
     const keys = "AZERTYUIOPQSDFGHJKLM WXC VBN".split("");
-    const kb = document.getElementById('kb');
     keys.forEach(k => {
-        const keyEl = document.createElement('div');
-        keyEl.className = 'key';
-        keyEl.innerText = k;
-        keyEl.onclick = () => {
-            const area = document.getElementById('writer-area');
-            if(area) {
-                area.value += (k === " ") ? " " : k;
-                area.focus();
-            }
-        };
-        kb.appendChild(keyEl);
+        const key = document.createElement('div');
+        key.className = 'key'; key.innerText = k;
+        key.onclick = () => { const ed = document.getElementById('editor'); if(ed) ed.value += k; };
+        document.getElementById('kb').appendChild(key);
     });
 
-    // --- TRACKING IA (STABILISÉ) ---
+    // --- 3. TRACKING MAIN ---
     const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
     hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
 
     hands.onResults(res => {
         if (res.multiHandLandmarks && res.multiHandLandmarks.length > 0) {
-            const idx = res.multiHandLandmarks[0][8];
-            const thm = res.multiHandLandmarks[0][4];
-
+            const lm = res.multiHandLandmarks[0];
+            const idx = lm[8], thm = lm[4];
+            
             let tx = (isMirror ? 1 - idx.x : idx.x) * window.innerWidth;
             let ty = idx.y * window.innerHeight;
+            cX += (tx - cX) * 0.25; cY += (ty - cY) * 0.25;
 
-            cX += (tx - cX) * 0.25;
-            cY += (ty - cY) * 0.25;
+            cursor.style.left = cX + 'px'; cursor.style.top = cY + 'px';
 
-            cursor.style.left = cX + 'px';
-            cursor.style.top = cY + 'px';
-
-            const dist = Math.hypot(idx.x - thm.x, idx.y - thm.y);
-            if (dist < 0.045) {
+            if (Math.hypot(idx.x - thm.x, idx.y - thm.y) < 0.05) {
                 if(!cursor.classList.contains('click')) {
                     cursor.classList.add('click');
-                    const el = document.elementFromPoint(cX, cY);
-                    if(el) el.click();
+                    const target = document.elementFromPoint(cX, cY);
+                    if(target) target.click();
                 }
             } else {
                 cursor.classList.remove('click');
@@ -233,19 +185,20 @@
     });
 
     function checkHover(x, y) {
-        document.querySelectorAll('.dock-item, .key, .app-card, .win-close, .save-btn').forEach(el => {
+        document.querySelectorAll('.dock-item, .card, .key, .win-dot, button').forEach(el => {
             const r = el.getBoundingClientRect();
-            if (x > r.left && x < r.right && y > r.top && y < r.bottom) el.style.boxShadow = "0 0 15px white";
-            else el.style.boxShadow = "none";
+            if (x > r.left && x < r.right && y > r.top && y < r.bottom) el.classList.add('active');
+            else el.classList.remove('active');
         });
     }
 
     async function start() {
-        const stream = await navigator.mediaDevices.getUserMedia({video: {width: 1280, height: 720}});
+        const stream = await navigator.mediaDevices.getUserMedia({video: true});
         document.getElementById('v-stream').srcObject = stream;
         new Camera(document.getElementById('v-stream'), {
             onFrame: async () => { await hands.send({image: document.getElementById('v-stream')}); }
         }).start();
+        AppManager.init();
     }
     start();
 </script>
