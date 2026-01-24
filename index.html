@@ -6,133 +6,160 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <style>
-        body { margin: 0; background: #000; color: white; font-family: 'Arial', sans-serif; overflow: hidden; }
-        #output_canvas { width: 100vw; height: 100vh; display: block; }
-        #ui { position: absolute; top: 20px; left: 20px; z-index: 10; }
-        .menu { position: absolute; top: 20px; right: 20px; z-index: 10; display: flex; gap: 10px; }
-        button { padding: 10px 15px; cursor: pointer; border: none; border-radius: 5px; background: #444; color: white; font-weight: bold; }
-        button:hover { background: #666; }
-        button.active { background: #2ed573; }
-        #score { font-size: 2em; text-shadow: 2px 2px 5px rgba(0,0,0,0.7); }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Arial Black', sans-serif; color: white; }
+        canvas { position: absolute; top: 0; left: 0; }
+        #ui { position: absolute; top: 20px; left: 20px; z-index: 10; pointer-events: none; }
+        #menu { position: absolute; top: 20px; right: 20px; z-index: 10; display: flex; gap: 10px; }
+        button { background: #333; color: white; border: 2px solid #555; padding: 10px; cursor: pointer; border-radius: 8px; font-weight: bold; pointer-events: auto; }
+        button:hover { background: #555; }
+        .active { border-color: #00ff00; background: #1a4d1a; }
+        .stat { font-size: 24px; margin-bottom: 5px; text-shadow: 2px 2px #000; }
+        video { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="ui"><div id="score">Score: 0</div></div>
-    
-    <div class="menu">
-        <button onclick="setGame('pop')" id="btn-pop" class="active">Pop It!</button>
-        <button onclick="setGame('clean')" id="btn-clean">Nettoyage</button>
-        <button onclick="setGame('balance')" id="btn-balance">Équilibre</button>
+    <div id="ui">
+        <div class="stat" id="score">SCORE: 0</div>
+        <div class="stat" id="mode-text">MODE: CHASSEUR</div>
     </div>
 
-    <video id="input_video" style="display:none"></video>
+    <div id="menu">
+        <button onclick="setMode('chasse')" id="btn-chasse" class="active">CHASSE</button>
+        <button onclick="setMode('ninja')" id="btn-ninja">NINJA</button>
+        <button onclick="setMode('gardien')" id="btn-gardien">GARDIEN</button>
+    </div>
+
+    <video id="input_video"></video>
     <canvas id="output_canvas"></canvas>
 
     <script>
         const videoElement = document.getElementById('input_video');
         const canvasElement = document.getElementById('output_canvas');
         const ctx = canvasElement.getContext('2d');
-        const scoreElement = document.getElementById('score');
-
-        let currentGame = 'pop';
+        
         let score = 0;
+        let gameMode = 'chasse'; // chasse, ninja, gardien
         let particles = [];
-        let gameItems = []; // Cibles ou saletés
-        let balanceX = 0;
+        let objects = []; // Cibles ou fruits
+        let handPos = { x: 0, y: 0, prevX: 0, prevY: 0 };
 
-        function setGame(mode) {
-            currentGame = mode;
-            score = 0;
-            gameItems = [];
-            scoreElement.innerText = `Score: 0`;
+        function resize() {
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+        }
+        window.onresize = resize;
+        resize();
+
+        function setMode(m) {
+            gameMode = m;
+            objects = [];
             document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-' + mode).classList.add('active');
-            if(mode === 'clean') initCleanGame();
+            document.getElementById('btn-' + m).classList.add('active');
+            document.getElementById('mode-text').innerText = "MODE: " + m.toUpperCase();
         }
 
-        function initCleanGame() {
-            for(let i=0; i<50; i++) {
-                gameItems.push({x: Math.random()*canvasElement.width, y: Math.random()*canvasElement.height, size: 40});
+        class GameObject {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.radius = Math.random() * 20 + 20;
+                this.x = Math.random() * (canvasElement.width - 100) + 50;
+                if (gameMode === 'ninja' || gameMode === 'gardien') {
+                    this.y = canvasElement.height + 50;
+                    this.vx = (Math.random() - 0.5) * 10;
+                    this.vy = -(Math.random() * 10 + 10);
+                } else {
+                    this.y = Math.random() * (canvasElement.height - 100) + 50;
+                    this.vx = 0; this.vy = 0;
+                }
+                this.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (gameMode !== 'chasse') this.vy += 0.2; // Gravité
+                if (this.y > canvasElement.height + 100 && gameMode === 'gardien') {
+                    score = Math.max(0, score - 5); // Pénalité si on rate en mode gardien
+                    this.reset();
+                }
             }
         }
 
-        function spawnPop() {
-            if(gameItems.length < 5 && Math.random() < 0.05) {
-                gameItems.push({
-                    x: Math.random() * canvasElement.width,
-                    y: canvasElement.height + 50,
-                    speed: 2 + Math.random() * 3,
-                    radius: 30 + Math.random() * 20,
-                    color: `hsl(${Math.random() * 360}, 70%, 60%)`
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x, y, 
+                    vx: (Math.random() - 0.5) * 10, 
+                    vy: (Math.random() - 0.5) * 10, 
+                    life: 1.0, 
+                    color 
                 });
             }
         }
 
         function onResults(results) {
-            canvasElement.width = window.innerWidth;
-            canvasElement.height = window.innerHeight;
             ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-            // Dessiner un fond léger pour la vidéo
-            ctx.save();
-            ctx.globalAlpha = 0.2;
-            ctx.translate(canvasElement.width, 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
-            ctx.restore();
+            // Gérer les objets du jeu
+            if (objects.length < 5) objects.push(new GameObject());
 
+            objects.forEach((obj, index) => {
+                obj.update();
+                ctx.beginPath();
+                ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+                ctx.fillStyle = obj.color;
+                ctx.fill();
+                ctx.closePath();
+            });
+
+            // Détection de la main
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const hand = results.multiHandLandmarks[0];
-                const index = { x: (1 - hand[8].x) * canvasElement.width, y: hand[8].y * canvasElement.height };
-                const palm = { x: (1 - hand[9].x) * canvasElement.width, y: hand[9].y * canvasElement.height };
+                handPos.prevX = handPos.x;
+                handPos.prevY = handPos.y;
+                handPos.x = (1 - hand[8].x) * canvasElement.width;
+                handPos.y = hand[8].y * canvasElement.height;
 
-                if (currentGame === 'pop') {
-                    spawnPop();
-                    gameItems.forEach((item, indexArr) => {
-                        item.y -= item.speed;
-                        ctx.beginPath();
-                        ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
-                        ctx.fillStyle = item.color;
-                        ctx.fill();
-
-                        let d = Math.hypot(index.x - item.x, index.y - item.y);
-                        if (d < item.radius) {
-                            gameItems.splice(indexArr, 1);
-                            score += 1;
-                            scoreElement.innerText = `Score: ${score}`;
-                        }
-                    });
-                } 
-                else if (currentGame === 'clean') {
-                    ctx.fillStyle = "rgba(255,255,255,0.8)";
-                    gameItems.forEach((item, indexArr) => {
-                        ctx.beginPath();
-                        ctx.arc(item.x, item.y, item.size, 0, Math.PI * 2);
-                        ctx.fill();
-                        let d = Math.hypot(palm.x - item.x, palm.y - item.y);
-                        if (d < 60) {
-                            gameItems.splice(indexArr, 1);
-                            score++;
-                            scoreElement.innerText = `Nettoyé: ${Math.floor((score/50)*100)}%`;
-                        }
-                    });
-                    if(gameItems.length === 0) initCleanGame();
-                }
-                else if (currentGame === 'balance') {
-                    let barWidth = 100;
-                    ctx.fillStyle = "#ffde59";
-                    ctx.fillRect(index.x - barWidth/2, index.y - 10, barWidth, 10);
-                    score++;
-                    scoreElement.innerText = `Temps: ${Math.floor(score/10)}s`;
-                }
-
-                // Curseur de la main
+                // Dessiner le pointeur
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = "white";
                 ctx.beginPath();
-                ctx.arc(index.x, index.y, 10, 0, Math.PI * 2);
-                ctx.fillStyle = "white";
-                ctx.fill();
+                ctx.arc(handPos.x, handPos.y, 15, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Logique de collision selon le mode
+                objects.forEach((obj, index) => {
+                    const dist = Math.hypot(handPos.x - obj.x, handPos.y - obj.y);
+                    let hit = false;
+
+                    if (gameMode === 'ninja') {
+                        // Collision si le mouvement est rapide (vitesse)
+                        const speed = Math.hypot(handPos.x - handPos.prevX, handPos.y - handPos.prevY);
+                        if (dist < obj.radius + 20 && speed > 15) hit = true;
+                    } else {
+                        if (dist < obj.radius + 15) hit = true;
+                    }
+
+                    if (hit) {
+                        score += 10;
+                        document.getElementById('score').innerText = `SCORE: ${score}`;
+                        createExplosion(obj.x, obj.y, obj.color);
+                        objects.splice(index, 1);
+                    }
+                });
             }
+
+            // Particules
+            particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.fillRect(p.x, p.y, 5, 5);
+                if (p.life <= 0) particles.splice(i, 1);
+            });
+            ctx.globalAlpha = 1.0;
         }
 
         const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
