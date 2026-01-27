@@ -2,78 +2,77 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>HYPERSPACE VR</title>
+    <title>CITY DESTROYER VR</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
   </head>
   <body>
-    <a-scene fog="type: exponential; color: #000; density: 0.15">
-      
+    <a-scene>
       <a-assets>
-        <img id="grid" src="https://i.imgur.com/mYmmbrp.png">
+        <audio id="boom" src="https://cdn.aframe.io/360-video-boilerplate/audio/click.mp3"></audio>
       </a-assets>
 
-      <a-entity id="player" position="0 0 0">
-        <a-camera washer-controls="enabled: false" look-controls>
-            <a-cursor color="cyan"></a-cursor>
-            <a-text id="dist" value="0m" position="0 -0.5 -1" align="center" color="yellow"></a-text>
-        </a-camera>
+      <a-entity environment="preset: moon; lighting: point; dressing: towers; dressingAmount: 100; dressingColor: #333"></a-entity>
+
+      <a-entity id="rig" position="0 0 0" 
+                animation="property: position; to: 0 0 -500; dur: 20000; easing: linear">
+        <a-entity camera look-controls position="0 1.6 0">
+            <a-entity cursor="fuse: false" position="0 0 -1"
+                      geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.02"
+                      material="color: #FF0000; shader: flat">
+            </a-entity>
+            <a-light type="spot" color="red" intensity="5" distance="20"></a-light>
+        </a-entity>
       </a-entity>
 
-      <a-entity id="tunnel-container"></a-entity>
+      <a-entity id="targets"></a-entity>
 
-      <a-light type="ambient" color="#222"></a-light>
-      <a-light type="point" color="cyan" intensity="2" position="0 0 -2"></a-light>
     </a-scene>
 
     <script>
-      const scene = document.querySelector('#tunnel-container');
-      const distText = document.querySelector('#dist');
-      let distance = 0;
-      const speed = 0.4; // Vitesse de déplacement
+      const targetContainer = document.querySelector('#targets');
+      
+      // On crée des "bâtiments" de verre qui explosent
+      for (let i = 0; i < 50; i++) {
+        let box = document.createElement('a-box');
+        let zPos = -(i * 10) - 20;
+        let xPos = (Math.random() - 0.5) * 10;
+        let yPos = Math.random() * 10;
 
-      // Création de segments de tunnel pour simuler l'infini
-      function createSegment(z) {
-        const segment = document.createElement('a-cylinder');
-        segment.setAttribute('radius', '5');
-        segment.setAttribute('height', '20');
-        segment.setAttribute('rotation', '90 0 0');
-        segment.setAttribute('position', `0 0 ${z}`);
-        segment.setAttribute('material', `src: #grid; side: double; repeat: 1 5; metalness: 0.6; roughness: 0.2`);
-        segment.setAttribute('open-ended', 'true');
-        segment.classList.add('segment');
-        scene.appendChild(segment);
-      }
-
-      // Initialisation (10 segments)
-      for (let i = 0; i < 10; i++) {
-        createSegment(-i * 20);
-      }
-
-      // Boucle de jeu
-      function update() {
-        distance += speed;
-        distText.setAttribute('value', Math.floor(distance) + "m");
-
-        // Faire défiler tous les segments vers le joueur
-        const segments = document.querySelectorAll('.segment');
-        segments.forEach(seg => {
-          let pos = seg.getAttribute('position');
-          pos.z += speed;
+        box.setAttribute('position', `${xPos} ${yPos} ${zPos}`);
+        box.setAttribute('scale', '2 5 2');
+        box.setAttribute('material', 'color: #00e5ff; opacity: 0.7; transparent: true; metalness: 1');
+        box.setAttribute('class', 'target');
+        
+        // Effet au regard : EXPLOSION
+        box.addEventListener('mouseenter', function () {
+          box.setAttribute('animation', 'property: scale; to: 0 0 0; dur: 200');
+          box.setAttribute('material', 'color: orange; emissive: red');
           
-          // Si le segment est derrière le joueur, on le remet devant
-          if (pos.z > 20) {
-            pos.z = -180;
-            // On change la couleur aléatoirement pour l'effet psychédélique
-            const colors = ['#ff00ff', '#00ffff', '#ffff00', '#ff0000'];
-            seg.setAttribute('material', 'color', colors[Math.floor(Math.random()*colors.length)]);
-          }
-          seg.setAttribute('position', pos);
+          // Flash lumineux de l'explosion
+          let flash = document.createElement('a-light');
+          flash.setAttribute('type', 'point');
+          flash.setAttribute('color', 'orange');
+          flash.setAttribute('position', box.getAttribute('position'));
+          document.querySelector('a-scene').appendChild(flash);
+          
+          setTimeout(() => flash.parentNode.removeChild(flash), 300);
         });
 
-        requestAnimationFrame(update);
+        targetContainer.appendChild(box);
       }
 
-      update();
+      // Variation de hauteur pour le "grand huit"
+      const rig = document.querySelector('#rig');
+      let time = 0;
+      function moveY() {
+        time += 0.02;
+        let currentPos = rig.getAttribute('position');
+        currentPos.y = Math.sin(time) * 5 + 5; // Oscillation verticale
+        rig.setAttribute('position', currentPos);
+        requestAnimationFrame(moveY);
+      }
+      moveY();
     </script>
   </body>
 </html>
