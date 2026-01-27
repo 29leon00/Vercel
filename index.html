@@ -1,158 +1,83 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="utf-8">
-    <title>Hand-OS Functional Edition</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <meta charset="UTF-8">
+    <title>Vision Pro Web VR - Cardboard</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.min.js"></script>
     <style>
-        :root { --accent: #007AFF; --bg: #121212; }
-        body { margin: 0; background: #000; color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
-        
-        #desktop { width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); position: relative; }
-        
-        /* IA & CURSEUR */
-        #cursor { position: fixed; width: 20px; height: 20px; border: 2px solid white; border-radius: 50%; pointer-events: none; z-index: 10000; mix-blend-mode: difference; }
-        #v-stream { position: fixed; top: 10px; right: 10px; width: 130px; border-radius: 10px; transform: scaleX(-1); opacity: 0.7; border: 1px solid white; }
-
-        /* FENÊTRE DYNAMIQUE */
-        #win { position: absolute; top: 10%; left: 10%; width: 80%; height: 75%; background: #1e1e1e; border-radius: 12px; display: none; flex-direction: column; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        .win-head { background: #2d2d2d; padding: 10px; display: flex; align-items: center; border-radius: 12px 12px 0 0; }
-        .win-close { width: 12px; height: 12px; background: #ff5f57; border-radius: 50%; cursor: pointer; }
-        .win-body { flex: 1; overflow: hidden; position: relative; }
-
-        /* DOCK */
-        #dock { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.1); backdrop-filter: blur(15px); padding: 10px; border-radius: 18px; display: flex; gap: 15px; }
-        .icon { font-size: 30px; cursor: pointer; transition: 0.2s; padding: 5px; }
-        .icon:hover { transform: scale(1.2); }
-
-        /* APPS INTERNES */
-        #canvas-paint { background: white; cursor: crosshair; width: 100%; height: 100%; }
-        .calc-btn { width: 60px; height: 60px; background: #333; border: none; color: white; font-size: 20px; border-radius: 10px; }
-        #editor { width: 100%; height: 90%; background: #fff; color: #000; font-size: 18px; padding: 20px; border: none; box-sizing: border-box; }
+        body { margin: 0; overflow: hidden; }
+        .vr-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            color: white;
+            font-family: sans-serif;
+            text-align: center;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
-<div id="desktop">
-    <div id="cursor"></div>
-    <video id="v-stream" autoplay playsinline></video>
+    <div class="vr-overlay">Regardez une icône pour l'activer</div>
 
-    <div id="win">
-        <div class="win-head"><div class="win-close" onclick="closeApp()"></div><span id="win-title" style="margin-left: 20px">App</span></div>
-        <div id="win-body" class="win-body"></div>
-    </div>
+    <a-scene xr-mode-ui="enabled: true">
+        <a-assets>
+            <img id="sky" src="https://cdn.aframe.io/a-painter/images/sky.jpg">
+        </a-assets>
 
-    <div id="dock">
-        <div class="icon" onclick="openApp('writer')">📝</div>
-        <div class="icon" onclick="openApp('paint')">🎨</div>
-        <div class="icon" onclick="openApp('calc')">🔢</div>
-        <div class="icon" onclick="openApp('files')">📂</div>
-    </div>
-</div>
+        <a-sky color="#1a1a1a"></a-sky>
+        <a-light type="ambient" intensity="0.5"></a-light>
+        <a-light type="directional" position="1 2 1"></a-light>
 
-<script>
-    const win = document.getElementById('win');
-    const body = document.getElementById('win-body');
-    const title = document.getElementById('win-title');
-    let isDrawing = false;
+        <a-entity camera look-controls position="0 1.6 0">
+            <a-cursor 
+                id="cursor"
+                animation__click="property: scale; startEvents: click; from: 0.1 0.1 0.1; to: 1 1 1; dur: 150"
+                animation__fusing="property: fusing; startEvents: fusing; from: 1 1 1; to: 0.1 0.1 0.1; dur: 1500"
+                event-set__mouseenter="_event: mouseenter; color: #007AFF"
+                event-set__mouseleave="_event: mouseleave; color: black"
+                raycaster="objects: .clickable">
+            </a-cursor>
+        </a-entity>
 
-    const APPS = {
-        writer: () => `
-            <div style="height:100%">
-                <button onclick="downloadText()" style="padding:10px;width:100%">Télécharger .txt</button>
-                <textarea id="editor" placeholder="Écrivez ici...">${localStorage.getItem('savedText') || ''}</textarea>
-            </div>`,
-        paint: () => `<canvas id="canvas-paint"></canvas>`,
-        calc: () => `
-            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; padding:20px;">
-                <input id="res" style="grid-column: span 4; font-size:30px; padding:10px" readonly>
-                ${['7','8','9','/','4','5','6','*','1','2','3','-','C','0','=','+'].map(v => 
-                    `<button class="calc-btn" onclick="calc('${v}')">${v}</button>`).join('')}
-            </div>`,
-        files: () => `
-            <div style="padding:20px">
-                <h3>Fichiers récents</h3>
-                <p>📄 Note_Saves.txt (Enregistré dans le cache)</p>
-            </div>`
-    };
+        <a-entity id="menu" position="0 1.5 -3">
+            
+            <a-sphere class="clickable" position="-1.2 0 0" radius="0.4" color="#FFFFFF" 
+                      animation="property: position; to: -1.2 0.1 0; dir: alternate; dur: 2000; loop: true">
+                <a-text value="Safari" align="center" position="0 -0.6 0" scale="0.5 0.5 0.5"></a-text>
+            </a-sphere>
 
-    function openApp(id) {
-        win.style.display = 'flex';
-        title.innerText = id.toUpperCase();
-        body.innerHTML = APPS[id]();
-        if(id === 'paint') initPaint();
-        if(id === 'writer') {
-            document.getElementById('editor').addEventListener('input', (e) => {
-                localStorage.setItem('savedText', e.target.value);
+            <a-sphere class="clickable" position="0 0 0" radius="0.4" color="#FFD700"
+                      animation="property: position; to: 0 0.15 0; dir: alternate; dur: 2500; loop: true">
+                <a-text value="Photos" align="center" position="0 -0.6 0" scale="0.5 0.5 0.5"></a-text>
+            </a-sphere>
+
+            <a-sphere class="clickable" position="1.2 0 0" radius="0.4" color="#4CD964"
+                      animation="property: position; to: 1.2 0.05 0; dir: alternate; dur: 1800; loop: true">
+                <a-text value="Messages" align="center" position="0 -0.6 0" scale="0.5 0.5 0.5"></a-text>
+            </a-sphere>
+
+        </a-entity>
+
+        <a-grid static-body material="opacity: 0.1; transparent: true"></a-grid>
+
+    </a-scene>
+
+    <script>
+        // Logique pour simuler l'ouverture d'une app
+        const icons = document.querySelectorAll('.clickable');
+        icons.forEach(icon => {
+            icon.addEventListener('click', function () {
+                this.setAttribute('material', 'color', '#007AFF');
+                alert("Ouverture de l'application...");
+                setTimeout(() => {
+                    this.setAttribute('material', 'color', this.getAttribute('color'));
+                }, 1000);
             });
-        }
-    }
-
-    function closeApp() { win.style.display = 'none'; }
-
-    // --- FONCTIONNALITÉS RÉELLES ---
-    function calc(v) {
-        const r = document.getElementById('res');
-        if(v === '=') r.value = eval(r.value);
-        else if(v === 'C') r.value = '';
-        else r.value += v;
-    }
-
-    function downloadText() {
-        const text = document.getElementById('editor').value;
-        const blob = new Blob([text], {type: "text/plain"});
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "note.txt";
-        a.click();
-    }
-
-    function initPaint() {
-        const canvas = document.getElementById('canvas-paint');
-        const ctx = canvas.getContext('2d');
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 5;
-        window.paintCtx = ctx;
-    }
-
-    // --- TRACKING IA ---
-    const hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8 });
-
-    hands.onResults(res => {
-        if (res.multiHandLandmarks && res.multiHandLandmarks[0]) {
-            const lm = res.multiHandLandmarks[0];
-            const index = lm[8], thumb = lm[4];
-            const x = (1 - index.x) * window.innerWidth;
-            const y = index.y * window.innerHeight;
-
-            document.getElementById('cursor').style.left = x + 'px';
-            document.getElementById('cursor').style.top = y + 'px';
-
-            const dist = Math.hypot(index.x - thumb.x, index.y - thumb.y);
-            if (dist < 0.05) {
-                const el = document.elementFromPoint(x, y);
-                if(el) el.click();
-                
-                // Dessin en temps réel si Paint est ouvert
-                if(window.paintCtx) {
-                    const rect = document.getElementById('canvas-paint').getBoundingClientRect();
-                    window.paintCtx.lineTo(x - rect.left, y - rect.top);
-                    window.paintCtx.stroke();
-                }
-            } else {
-                if(window.paintCtx) window.paintCtx.beginPath();
-            }
-        }
-    });
-
-    const cam = new Camera(document.getElementById('v-stream'), {
-        onFrame: async () => { await hands.send({image: document.getElementById('v-stream')}); }
-    });
-    cam.start();
-</script>
+        });
+    </script>
 </body>
 </html>
