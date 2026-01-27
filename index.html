@@ -2,71 +2,99 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Material VR Hub</title>
+    <title>VR Ultimate Lab</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
+    <script src="https://unpkg.com/aframe-particle-system-component@1.1.3/dist/aframe-particle-system-component.min.js"></script>
 </head>
 <body>
-    <a-scene shadow="type: pcfsoft">
-        
-        <a-entity environment="preset: contact; groundColor: #ffffff; grid: none; lighting: none"></a-entity>
-        <a-light type="ambient" intensity="0.7"></a-light>
-        <a-light type="directional" position="1 5 1" intensity="0.5" castShadow="true"></a-light>
+    <a-scene>
+        <a-assets>
+            <audio id="beep" src="https://cdn.aframe.io/360-video-boilerplate/audio/click.mp3"></audio>
+        </a-assets>
 
-        <a-entity camera look-controls position="0 1.6 0">
-            <a-entity cursor="fuse: true; fuseTimeout: 800"
-                      position="0 0 -1"
-                      geometry="primitive: ring; radiusInner: 0.015; radiusOuter: 0.02"
-                      material="color: #6200EE; shader: flat">
-                <a-animation begin="fusing" attribute="scale" from="1 1 1" to="0.5 0.5 0.5" dur="800"></a-animation>
+        <a-entity environment="preset: yavapai; lighting: none; shadow: true; dressingAmount: 0"></a-entity>
+        <a-light type="ambient" color="#fff"></a-light>
+        <a-light type="directional" position="1 4 3" intensity="0.6" castShadow="true"></a-light>
+
+        <a-entity id="rig" position="0 0 0">
+            <a-entity camera look-controls position="0 1.6 0" shake-detector>
+                <a-entity cursor="fuse: true; fuseTimeout: 1000"
+                          position="0 0 -1"
+                          geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                          material="color: #6200EE; shader: flat">
+                </a-entity>
+                <a-text id="status" value="Regardez un objet" position="0 -0.5 -1.2" align="center" width="2" color="#333"></a-text>
             </a-entity>
         </a-entity>
 
-        <a-entity position="-3 0 -5">
-            <a-text value="PHYSICS" align="center" position="0 2.5 0" color="#333"></a-text>
-            <a-box id="physic-box" position="0 1 0" color="#03DAC6" shadow
-                   animation="property: position; to: 0 2 0; dir: alternate; loop: true; dur: 2000; easing: easeInOutSine">
+        <a-entity position="-2 1 -4">
+            <a-box class="interact" color="#03DAC6" 
+                   animation__rotate="property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear"
+                   hover-info="msg: Objet Interactif - Change la couleur">
             </a-box>
-            <a-cylinder radius="0.5" height="0.1" color="#eee"></a-cylinder>
         </a-entity>
 
-        <a-entity position="0 0 -6">
-            <a-text value="SPATIAL AUDIO" align="center" position="0 2.5 0" color="#333"></a-text>
-            <a-torus-knot id="sound-node" radius="0.4" radius-tubular="0.05" color="#6200EE" shadow
-                          sound="src: url(https://cdn.aframe.io/360-video-boilerplate/audio/click.mp3); on: mouseenter">
-            </a-torus-knot>
-            <a-text value="(Regardez pour déclencher)" position="0 0.5 0" align="center" width="2" color="#666"></a-text>
+        <a-entity position="2 1 -4">
+            <a-sphere class="interact" color="#BB86FC" radius="0.7"
+                      sound="src: #beep; on: click"
+                      hover-info="msg: Audio Spatial - Cliquez pour le son">
+                <a-light type="point" intensity="0.5" color="#BB86FC"></a-light>
+            </a-sphere>
         </a-entity>
 
-        <a-entity position="3 0 -5">
-            <a-text value="VISION" align="center" position="0 2.5 0" color="#333"></a-text>
-            <a-sphere id="vision-sphere" position="0 1 0" radius="0.6" color="#B00020" shadow
-                      event-set__click="_target: a-scene; background: color: #000"></a-sphere>
-        </a-entity>
+        <a-entity position="0 0 -8" particle-system="color: #6200EE; particleCount: 500; size: 0.1"></a-entity>
 
+        <a-plane rotation="-90 0 0" width="20" height="20" color="#F5F5F5" shadow="receive: true"></a-plane>
     </a-scene>
 
     <script>
-        // Module de vibration haptique Material Design
-        const interactibles = document.querySelectorAll('a-box, a-sphere, a-torus-knot');
-        interactibles.forEach(el => {
-            el.addEventListener('mouseenter', () => {
-                if (navigator.vibrate) navigator.vibrate(20);
-                // Feedback visuel sobre : on augmente légèrement l'émissivité
-                el.setAttribute('material', 'emissive', el.getAttribute('color'));
-                el.setAttribute('material', 'emissiveIntensity', '0.2');
-            });
-            el.addEventListener('mouseleave', () => {
-                el.setAttribute('material', 'emissiveIntensity', '0');
-            });
+        // COMPOSANT : Détection des secousses (Accéléromètre)
+        AFRAME.registerComponent('shake-detector', {
+            init: function () {
+                this.lastUpdate = 0;
+                this.lastX = null;
+                window.addEventListener('devicemotion', (ev) => {
+                    let acc = ev.accelerationIncludingGravity;
+                    if (this.lastX !== null) {
+                        let delta = Math.abs(acc.x - this.lastX);
+                        if (delta > 20) { // Si on secoue le tel
+                            document.querySelector('a-scene').setAttribute('background', 'color', '#000');
+                            setTimeout(() => document.querySelector('a-scene').setAttribute('background', 'color', '#fff'), 100);
+                        }
+                    }
+                    this.lastX = acc.x;
+                });
+            }
         });
 
-        // Interaction spécifique pour la sphère (Changement de mode)
-        document.querySelector('#vision-sphere').addEventListener('click', () => {
-            const scene = document.querySelector('a-scene');
-            const isDark = scene.getAttribute('background').color === '#000';
-            scene.setAttribute('background', 'color', isDark ? '#FFF' : '#000');
+        // COMPOSANT : Mise à jour du texte d'info
+        AFRAME.registerComponent('hover-info', {
+            schema: { msg: {type: 'string'} },
+            init: function () {
+                let status = document.querySelector('#status');
+                this.el.addEventListener('mouseenter', () => {
+                    status.setAttribute('value', this.data.msg);
+                    this.el.setAttribute('scale', '1.2 1.2 1.2');
+                    if(navigator.vibrate) navigator.vibrate(50); // Vibration
+                });
+                this.el.addEventListener('mouseleave', () => {
+                    status.setAttribute('value', 'Regardez un objet');
+                    this.el.setAttribute('scale', '1 1 1');
+                });
+                this.el.addEventListener('click', () => {
+                    // Change la couleur aléatoirement
+                    this.el.setAttribute('color', '#' + Math.floor(Math.random()*16777215).toString(16));
+                });
+            }
         });
+
+        // IMPORTANT : Forcer l'activation des capteurs sur iOS/Chrome
+        document.body.addEventListener('click', function() {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission();
+            }
+        }, {once: true});
     </script>
 </body>
 </html>
