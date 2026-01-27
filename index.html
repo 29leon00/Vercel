@@ -1,77 +1,79 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <meta charset="utf-8">
-    <title>Void Defender VR</title>
+    <title>HYPERSPACE VR</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
-</head>
-<body>
-    <a-scene>
-        <a-assets>
-            <audio id="exp-snd" src="https://cdn.aframe.io/360-video-boilerplate/audio/click.mp3"></audio>
-        </a-assets>
+  </head>
+  <body>
+    <a-scene fog="type: exponential; color: #000; density: 0.15">
+      
+      <a-assets>
+        <img id="grid" src="https://i.imgur.com/mYmmbrp.png">
+      </a-assets>
 
-        <a-entity environment="preset: tron; lighting: point; dressingAmount: 50"></a-entity>
+      <a-entity id="player" position="0 0 0">
+        <a-camera washer-controls="enabled: false" look-controls>
+            <a-cursor color="cyan"></a-cursor>
+            <a-text id="dist" value="0m" position="0 -0.5 -1" align="center" color="yellow"></a-text>
+        </a-camera>
+      </a-entity>
 
-        <a-entity camera look-controls position="0 1.6 0">
-            <a-entity cursor="fuse: true; fuseTimeout: 500" 
-                      position="0 0 -1" 
-                      geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03" 
-                      material="color: #FF0000; shader: flat">
-            </a-entity>
-            <a-text id="score" value="Score: 0" position="-0.5 0.5 -1" color="#00FF00" width="2"></a-text>
-        </a-entity>
+      <a-entity id="tunnel-container"></a-entity>
 
-        <a-entity id="enemy-container"></a-entity>
+      <a-light type="ambient" color="#222"></a-light>
+      <a-light type="point" color="cyan" intensity="2" position="0 0 -2"></a-light>
     </a-scene>
 
     <script>
-        let score = 0;
-        const enemyContainer = document.querySelector('#enemy-container');
-        const scoreText = document.querySelector('#score');
+      const scene = document.querySelector('#tunnel-container');
+      const distText = document.querySelector('#dist');
+      let distance = 0;
+      const speed = 0.4; // Vitesse de déplacement
 
-        // Fonction pour créer un ennemi
-        function spawnEnemy() {
-            const enemy = document.createElement('a-entity');
-            
-            // Position aléatoire sur une sphère autour du joueur
-            const angle = Math.random() * Math.PI * 2;
-            const x = Math.cos(angle) * 10;
-            const z = Math.sin(angle) * 10;
-            const y = (Math.random() * 4) + 0.5;
+      // Création de segments de tunnel pour simuler l'infini
+      function createSegment(z) {
+        const segment = document.createElement('a-cylinder');
+        segment.setAttribute('radius', '5');
+        segment.setAttribute('height', '20');
+        segment.setAttribute('rotation', '90 0 0');
+        segment.setAttribute('position', `0 0 ${z}`);
+        segment.setAttribute('material', `src: #grid; side: double; repeat: 1 5; metalness: 0.6; roughness: 0.2`);
+        segment.setAttribute('open-ended', 'true');
+        segment.classList.add('segment');
+        scene.appendChild(segment);
+      }
 
-            enemy.setAttribute('geometry', 'primitive: torusKnot; p: 2; q: 3; radius: 0.5; radiusTubular: 0.05');
-            enemy.setAttribute('material', 'color: #FF00FF; emissive: #660066');
-            enemy.setAttribute('position', `${x} ${y} ${z}`);
-            enemy.setAttribute('class', 'enemy');
+      // Initialisation (10 segments)
+      for (let i = 0; i < 10; i++) {
+        createSegment(-i * 20);
+      }
 
-            // Animation : l'ennemi fonce vers le joueur
-            enemy.setAttribute('animation', `property: position; to: 0 1.6 0; dur: 8000; easing: linear`);
+      // Boucle de jeu
+      function update() {
+        distance += speed;
+        distText.setAttribute('value', Math.floor(distance) + "m");
 
-            // Interaction : détruit au regard
-            enemy.addEventListener('mouseenter', function () {
-                score += 10;
-                scoreText.setAttribute('value', 'Score: ' + score);
-                
-                // Effet d'explosion simple
-                enemy.setAttribute('geometry', 'primitive: sphere; radius: 0.2');
-                enemy.setAttribute('material', 'color: yellow');
-                
-                setTimeout(() => {
-                    if(enemy.parentNode) enemy.parentNode.removeChild(enemy);
-                }, 100);
-                
-                // On en recrée deux pour augmenter la difficulté
-                spawnEnemy();
-                setTimeout(spawnEnemy, 1000);
-            });
+        // Faire défiler tous les segments vers le joueur
+        const segments = document.querySelectorAll('.segment');
+        segments.forEach(seg => {
+          let pos = seg.getAttribute('position');
+          pos.z += speed;
+          
+          // Si le segment est derrière le joueur, on le remet devant
+          if (pos.z > 20) {
+            pos.z = -180;
+            // On change la couleur aléatoirement pour l'effet psychédélique
+            const colors = ['#ff00ff', '#00ffff', '#ffff00', '#ff0000'];
+            seg.setAttribute('material', 'color', colors[Math.floor(Math.random()*colors.length)]);
+          }
+          seg.setAttribute('position', pos);
+        });
 
-            enemyContainer.appendChild(enemy);
-        }
+        requestAnimationFrame(update);
+      }
 
-        // Lancer le premier ennemi
-        spawnEnemy();
+      update();
     </script>
-</body>
+  </body>
 </html>
