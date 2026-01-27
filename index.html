@@ -1,81 +1,82 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Vision Pro Web VR - Cardboard</title>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.min.js"></script>
-    <style>
-        body { margin: 0; overflow: hidden; }
-        .vr-overlay {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            color: white;
-            font-family: sans-serif;
-            text-align: center;
-            pointer-events: none;
-        }
-    </style>
+    <meta charset="utf-8">
+    <title>Vision Pro Clone - Cardboard VR</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-event-set-component@5.0.0/dist/aframe-event-set-component.min.js"></script>
 </head>
 <body>
 
-    <div class="vr-overlay">Regardez une icône pour l'activer</div>
-
     <a-scene xr-mode-ui="enabled: true">
-        <a-assets>
-            <img id="sky" src="https://cdn.aframe.io/a-painter/images/sky.jpg">
-        </a-assets>
-
-        <a-sky color="#1a1a1a"></a-sky>
-        <a-light type="ambient" intensity="0.5"></a-light>
-        <a-light type="directional" position="1 2 1"></a-light>
+        
+        <a-sky src="https://cdn.polyhaven.com/asset_img/primary/kloofendal_48d_partly_cloudy_puresky.jpg?height=720" rotation="0 -90 0"></a-sky>
+        <a-light type="ambient" intensity="0.7"></a-light>
+        <a-light type="directional" position="1 5 -2" intensity="0.5"></a-light>
 
         <a-entity camera look-controls position="0 1.6 0">
-            <a-cursor 
-                id="cursor"
-                animation__click="property: scale; startEvents: click; from: 0.1 0.1 0.1; to: 1 1 1; dur: 150"
-                animation__fusing="property: fusing; startEvents: fusing; from: 1 1 1; to: 0.1 0.1 0.1; dur: 1500"
-                event-set__mouseenter="_event: mouseenter; color: #007AFF"
-                event-set__mouseleave="_event: mouseleave; color: black"
-                raycaster="objects: .clickable">
-            </a-cursor>
+            <a-entity cursor="fuse: true; fuseTimeout: 1500"
+                      position="0 0 -1"
+                      geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+                      material="color: white; shader: flat; opacity: 0.8"
+                      animation__fusing="property: scale; startEvents: fusing; easing: easeInCubic; dur: 1500; from: 1 1 1; to: 0.1 0.1 0.1"
+                      animation__mouseleave="property: scale; startEvents: mouseleave; easing: easeInCubic; dur: 500; to: 1 1 1">
+            </a-entity>
         </a-entity>
 
-        <a-entity id="menu" position="0 1.5 -3">
+        <a-entity id="home-menu" position="0 1.6 -4">
             
-            <a-sphere class="clickable" position="-1.2 0 0" radius="0.4" color="#FFFFFF" 
-                      animation="property: position; to: -1.2 0.1 0; dir: alternate; dur: 2000; loop: true">
-                <a-text value="Safari" align="center" position="0 -0.6 0" scale="0.5 0.5 0.5"></a-text>
-            </a-sphere>
+            <a-plane width="5" height="3" material="color: #ffffff; opacity: 0.15; transparent: true; metalness: 0.2; roughness: 0.1" 
+                     position="0 0 -0.1">
+            </a-plane>
 
-            <a-sphere class="clickable" position="0 0 0" radius="0.4" color="#FFD700"
-                      animation="property: position; to: 0 0.15 0; dir: alternate; dur: 2500; loop: true">
-                <a-text value="Photos" align="center" position="0 -0.6 0" scale="0.5 0.5 0.5"></a-text>
-            </a-sphere>
+            <a-text value="Applications" align="center" position="0 1.2 0.05" width="4" font="https://cdn.aframe.io/fonts/Aileron-Semibold.fnt"></a-text>
 
-            <a-sphere class="clickable" position="1.2 0 0" radius="0.4" color="#4CD964"
-                      animation="property: position; to: 1.2 0.05 0; dir: alternate; dur: 1800; loop: true">
-                <a-text value="Messages" align="center" position="0 -0.6 0" scale="0.5 0.5 0.5"></a-text>
-            </a-sphere>
+            <a-entity class="clickable" position="-1.5 0.2 0" 
+                      event-set__enter="_event: mouseenter; scale: 1.2 1.2 1.2"
+                      event-set__leave="_event: mouseleave; scale: 1 1 1">
+                <a-circle radius="0.4" color="#ffffff" material="src: url(https://upload.wikimedia.org/wikipedia/commons/5/52/Safari_browser_logo.png)"></a-circle>
+                <a-text value="Safari" align="center" position="0 -0.6 0" width="2.5"></a-text>
+            </a-entity>
+
+            <a-entity class="clickable" position="0 0.2 0"
+                      event-set__enter="_event: mouseenter; scale: 1.2 1.2 1.2"
+                      event-set__leave="_event: mouseleave; scale: 1 1 1">
+                <a-circle radius="0.4" color="#ffffff" material="opacity: 0.9"></a-circle>
+                <a-sphere radius="0.1" position="0 0 0.05" color="#FF5F5F"></a-sphere> <a-text value="Photos" align="center" position="0 -0.6 0" width="2.5"></a-text>
+            </a-entity>
+
+            <a-entity class="clickable" position="1.5 0.2 0"
+                      event-set__enter="_event: mouseenter; scale: 1.2 1.2 1.2"
+                      event-set__leave="_event: mouseleave; scale: 1 1 1">
+                <a-circle radius="0.4" color="#8E8E93"></a-circle>
+                <a-text value="Reglages" align="center" position="0 -0.6 0" width="2.5"></a-text>
+            </a-entity>
 
         </a-entity>
 
-        <a-grid static-body material="opacity: 0.1; transparent: true"></a-grid>
+        <a-entity id="window-aside" position="4 1.8 -3" rotation="0 -30 0">
+            <a-plane width="2.5" height="3.5" material="color: white; opacity: 0.2; transparent: true">
+                <a-text value="Meteo\nParis: 18C" align="center" position="0 0 0.1" width="3"></a-text>
+            </a-plane>
+        </a-entity>
 
     </a-scene>
 
     <script>
-        // Logique pour simuler l'ouverture d'une app
-        const icons = document.querySelectorAll('.clickable');
-        icons.forEach(icon => {
-            icon.addEventListener('click', function () {
-                this.setAttribute('material', 'color', '#007AFF');
-                alert("Ouverture de l'application...");
-                setTimeout(() => {
-                    this.setAttribute('material', 'color', this.getAttribute('color'));
-                }, 1000);
+        // Interaction : Quand on "clique" (fuse) sur une icône
+        const apps = document.querySelectorAll('.clickable');
+        apps.forEach(app => {
+            app.addEventListener('click', function () {
+                // Animation de retour visuel
+                this.setAttribute('animation', {
+                    property: 'position',
+                    to: this.getAttribute('position').x + ' ' + this.getAttribute('position').y + ' -0.5',
+                    dur: 200,
+                    dir: 'alternate',
+                    loop: 1
+                });
+                console.log("App lancée !");
             });
         });
     </script>
