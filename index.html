@@ -1,105 +1,41 @@
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <meta charset="utf-8">
-    <title>SYSTEM-X VR</title>
+    <title>6DOF Real Movement</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-environment-component@1.3.2/dist/aframe-environment-component.min.js"></script>
-</head>
-<body style="background: #000;">
-    <a-scene>
-        <a-assets>
-            <audio id="haptic-click" src="https://cdn.aframe.io/360-video-boilerplate/audio/click.mp3"></audio>
-        </a-assets>
+  </head>
+  <body>
+    <a-scene webxr="referenceSpaceType: local-floor">
+      
+      <a-entity environment="preset: gridkas; grid: dots; dressingAmount: 100; dressingScale: 0.5"></a-entity>
 
-        <a-entity environment="preset: starry; grid: dots; gridColor: #222; ground: none"></a-entity>
-
-        <a-entity id="player" camera look-controls position="0 1.6 0">
-            <a-entity cursor="fuse: true; fuseTimeout: 500" position="0 0 -1"
-                      geometry="primitive: ring; radiusInner: 0.01; radiusOuter: 0.015"
-                      material="color: #00ff00; shader: flat">
-            </a-entity>
-
-            <a-entity position="0 -0.4 -1.2">
-                <a-text id="gyro-data" value="GYRO: --" position="-0.5 0.1 0" scale="0.3 0.3 0.3" color="lime"></a-text>
-                <a-text id="acc-data" value="ACCEL: --" position="-0.5 0 0" scale="0.3 0.3 0.3" color="cyan"></a-text>
-                <a-text id="mag-data" value="MAG: --" position="-0.5 -0.1 0" scale="0.3 0.3 0.3" color="yellow"></a-text>
-            </a-entity>
+      <a-entity id="rig" position="0 0 0">
+        <a-entity camera look-controls position="0 1.6 0">
+            <a-cursor color="white"></a-cursor>
         </a-entity>
+      </a-entity>
 
-        <a-entity position="-3 1.6 -5" sound="src: #haptic-click; loop: true; autoplay: true; rolloffFactor: 10">
-            <a-sphere radius="0.5" material="wireframe: true; color: #ff00ff" 
-                      animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true; dur: 500">
-            </a-sphere>
-            <a-text value="AUDIO 3D" position="0 1 0" align="center"></a-text>
-        </a-entity>
-
-        <a-entity id="physics-cluster" position="3 0 -5"></a-entity>
-
-        <a-entity id="portal" position="0 1.6 -8" geometry="primitive: torusKnot; radius: 1; radiusTubular: 0.05"
-                  material="color: #6200ee; emissive: #3300aa"
-                  animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
-        </a-entity>
+      <a-box position="-2 1 -3" color="#6200EE"></a-box>
+      <a-box position="2 1 -3" color="#03DAC6"></a-box>
+      <a-box position="0 1 -7" color="#B00020"></a-box>
 
     </a-scene>
 
     <script>
-        const gyroText = document.querySelector('#gyro-data');
-        const accText = document.querySelector('#acc-data');
-        const magText = document.querySelector('#mag-data');
-        const physicsCluster = document.querySelector('#physics-cluster');
-
-        // Initialisation des objets de physique
-        for(let i=0; i<15; i++) {
-            let b = document.createElement('a-box');
-            b.setAttribute('position', `${(Math.random()-0.5)*4} ${Math.random()*4} 0`);
-            b.setAttribute('scale', '0.3 0.3 0.3');
-            b.setAttribute('color', 'cyan');
-            b.setAttribute('class', 'interactable');
-            physicsCluster.appendChild(b);
+      // Force l'activation des capteurs de mouvement sur mobile
+      window.addEventListener('touchstart', () => {
+        if (typeof DeviceMotionEvent.requestPermission === 'function') {
+          DeviceMotionEvent.requestPermission()
+            .then(response => {
+              if (response == 'granted') {
+                console.log("Accès aux mouvements accordé");
+              }
+            })
+            .catch(console.error);
         }
-
-        // --- EXPLOITATION DES CAPTEURS ---
-
-        // 1. Gyroscope (Orientation)
-        window.addEventListener('deviceorientation', (e) => {
-            gyroText.setAttribute('value', `GYRO: X:${Math.round(e.beta)} Y:${Math.round(e.gamma)}`);
-        });
-
-        // 2. Accéléromètre (Mouvement brusque)
-        window.addEventListener('devicemotion', (e) => {
-            let a = e.accelerationIncludingGravity;
-            accText.setAttribute('value', `ACCEL: ${Math.round(a.x)} | ${Math.round(a.y)} | ${Math.round(a.z)}`);
-            
-            // Si on secoue le téléphone, on change la couleur du portail
-            if (Math.abs(a.x) > 15) {
-                document.querySelector('#portal').setAttribute('material', 'color', 'red');
-                if(navigator.vibrate) navigator.vibrate(100);
-            }
-        });
-
-        // 3. Magnétomètre (Boussole réelle)
-        window.addEventListener('deviceorientationabsolute', (e) => {
-            if (e.alpha) magText.setAttribute('value', `MAG (NORTH): ${Math.round(e.alpha)}deg`);
-        });
-
-        // 4. Interaction (Vibration au regard)
-        document.querySelectorAll('.interactable, #portal').forEach(el => {
-            el.addEventListener('mouseenter', () => {
-                if(navigator.vibrate) navigator.vibrate(20);
-                el.setAttribute('material', 'emissive', '#fff');
-            });
-            el.addEventListener('mouseleave', () => {
-                el.setAttribute('material', 'emissive', '#000');
-            });
-        });
-
-        // Activation manuelle pour les navigateurs mobiles récents
-        window.addEventListener('click', () => {
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission();
-            }
-        }, {once: true});
+      }, {once: true});
     </script>
-</body>
+  </body>
 </html>
