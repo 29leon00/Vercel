@@ -392,23 +392,32 @@ let connected = false, currentPath = '/', tabs = [], activeTab = null, ctxTarget
 let monacoEditor = null, monacoReady = false, pendingAct = null;
 
 // ══ DROPDOWN MENUS ══
-document.querySelectorAll('.mb-item').forEach(item => {
-  item.querySelector('.mb-btn').addEventListener('click', e => {
-    e.stopPropagation();
-    const wasOpen = item.classList.contains('open');
-    document.querySelectorAll('.mb-item').forEach(i => i.classList.remove('open'));
-    if (!wasOpen) item.classList.add('open');
-  });
-});
-document.addEventListener('click', () =>
-  document.querySelectorAll('.mb-item').forEach(i => i.classList.remove('open')));
-// Prevent dropdown content clicks from closing
-document.querySelectorAll('.mb-dropdown').forEach(d =>
-  d.addEventListener('click', e => e.stopPropagation()));
-
+// ══ DROPDOWN MENUS ══
+// Use mousedown on document to detect outside clicks (works even with Monaco iframe)
 function closeMenus() {
   document.querySelectorAll('.mb-item').forEach(i => i.classList.remove('open'));
 }
+
+document.querySelectorAll('.mb-btn').forEach(btn => {
+  btn.addEventListener('mousedown', e => {
+    e.preventDefault(); // prevent blur
+    e.stopPropagation();
+    const item = btn.closest('.mb-item');
+    const wasOpen = item.classList.contains('open');
+    closeMenus();
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+
+// Close when clicking outside
+document.addEventListener('mousedown', e => {
+  if (!e.target.closest('.mb-item')) closeMenus();
+});
+
+// Keep dropdown open when clicking inside it (but not on action buttons)
+document.querySelectorAll('.mb-dropdown').forEach(d => {
+  d.addEventListener('mousedown', e => e.stopPropagation());
+});
 
 // ══ API ══
 const cfg = () => ({
