@@ -46,11 +46,11 @@ body{font-family:var(--ui);background:var(--bg);color:var(--text);display:flex;f
 .mb-btn{background:none;border:none;color:var(--text2);font-family:var(--ui);font-size:12px;font-weight:600;padding:0 14px;height:100%;cursor:pointer;transition:background .1s,color .1s;white-space:nowrap;letter-spacing:.02em}
 .mb-btn:hover,.mb-btn.open{background:var(--bg3);color:var(--text)}
 .mb-dropdown{
-  position:absolute;top:100%;left:0;
+  position:fixed;top:40px;
   background:var(--bg3);border:1px solid var(--border2);
   border-radius:7px;padding:4px;min-width:200px;
-  box-shadow:0 12px 40px rgba(0,0,0,.6);
-  display:none;z-index:1000;animation:drop .1s ease;
+  box-shadow:0 12px 40px rgba(0,0,0,.8);
+  display:none;z-index:99999;animation:drop .1s ease;
 }
 .mb-item.open .mb-dropdown{display:block}
 @keyframes drop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
@@ -400,12 +400,18 @@ function closeMenus() {
 
 document.querySelectorAll('.mb-btn').forEach(btn => {
   btn.addEventListener('mousedown', e => {
-    e.preventDefault(); // prevent blur
+    e.preventDefault();
     e.stopPropagation();
     const item = btn.closest('.mb-item');
     const wasOpen = item.classList.contains('open');
     closeMenus();
-    if (!wasOpen) item.classList.add('open');
+    if (!wasOpen) {
+      item.classList.add('open');
+      // Position dropdown under the button
+      const dd = item.querySelector('.mb-dropdown');
+      const rect = btn.getBoundingClientRect();
+      dd.style.left = rect.left + 'px';
+    }
   });
 });
 
