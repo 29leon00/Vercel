@@ -4,239 +4,295 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FTP Studio</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg:      #0e1117;
-  --bg2:     #141720;
-  --bg3:     #1b1f2e;
-  --bg4:     #222740;
-  --border:  #1e2436;
-  --border2: #2a3050;
+  --bg:      #0d1017;
+  --bg2:     #121620;
+  --bg3:     #181c28;
+  --bg4:     #1e2233;
+  --border:  #1c2133;
+  --border2: #263050;
   --accent:  #38bdf8;
   --green:   #34d399;
   --red:     #f87171;
   --yellow:  #fbbf24;
   --orange:  #fb923c;
   --teal:    #2dd4bf;
-  --text:    #cbd5e1;
-  --text2:   #4b5a7a;
-  --text3:   #252d42;
+  --text:    #c8d3e8;
+  --text2:   #48587a;
+  --text3:   #222a40;
   --mono:    'JetBrains Mono', monospace;
   --ui:      'Outfit', sans-serif;
 }
+html,body{height:100%}
+body{font-family:var(--ui);background:var(--bg);color:var(--text);display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-html, body { height: 100%; }
-body { font-family: var(--ui); background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-/* ── TOPBAR ── */
-#topbar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 14px; height: 50px;
-  background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0;
-  overflow: hidden;
+/* ══ TOPBAR ══ */
+#topbar{
+  display:flex;align-items:center;gap:0;
+  height:40px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;
 }
-.logo { font-size: 16px; font-weight: 800; letter-spacing: .06em; white-space: nowrap; margin-right: 6px; color: var(--accent); }
-.logo span { color: var(--teal); }
-.f { display: flex; align-items: center; gap: 5px; }
+.logo{font-size:14px;font-weight:800;letter-spacing:.08em;color:var(--accent);padding:0 16px;border-right:1px solid var(--border);height:100%;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.logo span{color:var(--teal)}
+.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background .3s,box-shadow .3s}
+.logo-dot.on{background:var(--green);box-shadow:0 0 7px var(--green)}
+.logo-dot.err{background:var(--red)}
 
-input.tb {
-  background: var(--bg3); border: 1px solid var(--border2);
-  color: var(--text); font-family: var(--mono); font-size: 11px;
-  padding: 0 8px; border-radius: 5px; outline: none; height: 28px;
-  transition: border-color .15s, box-shadow .15s;
+/* Menu bar */
+#menubar{display:flex;align-items:center;height:100%;flex:1;overflow:hidden}
+.mb-item{position:relative;height:100%}
+.mb-btn{background:none;border:none;color:var(--text2);font-family:var(--ui);font-size:12px;font-weight:600;padding:0 14px;height:100%;cursor:pointer;transition:background .1s,color .1s;white-space:nowrap;letter-spacing:.02em}
+.mb-btn:hover,.mb-btn.open{background:var(--bg3);color:var(--text)}
+.mb-dropdown{
+  position:absolute;top:100%;left:0;
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:7px;padding:4px;min-width:200px;
+  box-shadow:0 12px 40px rgba(0,0,0,.6);
+  display:none;z-index:1000;animation:drop .1s ease;
 }
-input.tb:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(56,189,248,.1); }
-input.tb::placeholder { color: var(--text3); }
-#iHost{width:140px} #iUser{width:88px} #iPass{width:88px} #iPort{width:44px}
-#iProxy{width:210px} #iToken{width:110px}
+.mb-item.open .mb-dropdown{display:block}
+@keyframes drop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.dd-item{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;background:none;border:none;color:var(--text);font-family:var(--ui);font-size:12px;padding:7px 12px;cursor:pointer;border-radius:5px;transition:background .1s;text-align:left}
+.dd-item:hover{background:var(--bg4)}
+.dd-item:disabled{color:var(--text3);cursor:default}
+.dd-item:disabled:hover{background:none}
+.dd-item .dk{font-size:10px;color:var(--text2);font-family:var(--mono);background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;white-space:nowrap}
+.dd-item.danger{color:var(--red)}
+.dd-sep{height:1px;background:var(--border);margin:4px 0}
 
-.vsep { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; margin: 0 2px; }
-
-#btnConnect {
-  background: var(--accent); color: #0e1117; border: none; border-radius: 5px;
-  font-family: var(--ui); font-size: 11.5px; font-weight: 700;
-  padding: 0 14px; height: 28px; cursor: pointer; white-space: nowrap;
-  transition: opacity .15s, transform .1s; flex-shrink: 0;
+/* Connection panel */
+#connPanel{
+  display:flex;align-items:center;gap:6px;padding:0 12px;
+  border-left:1px solid var(--border);height:100%;flex-shrink:0;
 }
-#btnConnect:hover { opacity: .85; }
-#btnConnect:active { transform: scale(.97); }
-#btnConnect.disc { background: var(--red); color: #fff; }
-
-#dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; transition: background .3s, box-shadow .3s; }
-#dot.on  { background: var(--green); box-shadow: 0 0 7px var(--green); }
-#dot.err { background: var(--red); box-shadow: 0 0 7px var(--red); }
-#statusMsg { font-size: 11px; font-family: var(--mono); color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-
-/* ── LAYOUT ── */
-#body { display: flex; flex: 1; overflow: hidden; }
-
-/* ── SIDEBAR ── */
-#sidebar {
-  width: 230px; min-width: 150px; display: flex; flex-direction: column;
-  background: var(--bg2); border-right: 1px solid var(--border); flex-shrink: 0; overflow: hidden;
+input.ci{
+  background:var(--bg3);border:1px solid var(--border2);color:var(--text);
+  font-family:var(--mono);font-size:11px;padding:0 7px;border-radius:5px;
+  outline:none;height:26px;transition:border-color .15s;
 }
-
-#sideHead {
-  display: flex; align-items: center; gap: 2px; padding: 5px 6px;
-  border-bottom: 1px solid var(--border); flex-shrink: 0; min-height: 36px; background: var(--bg3);
+input.ci:focus{border-color:var(--accent)}
+input.ci::placeholder{color:var(--text3)}
+#ciProxy{width:190px}#ciToken{width:100px}#ciHost{width:130px}#ciUser{width:80px}#ciPass{width:80px}#ciPort{width:40px}
+.csep{width:1px;height:18px;background:var(--border2);flex-shrink:0}
+#btnConn{
+  background:var(--accent);color:#0d1017;border:none;border-radius:5px;
+  font-family:var(--ui);font-size:11.5px;font-weight:700;padding:0 12px;height:26px;
+  cursor:pointer;white-space:nowrap;transition:opacity .15s,transform .1s;flex-shrink:0
 }
-#pathDisplay { font-size: 10px; font-family: var(--mono); color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+#btnConn:hover{opacity:.85}
+#btnConn:active{transform:scale(.97)}
+#btnConn.disc{background:var(--red);color:#fff}
+#connStatus{font-size:10.5px;font-family:var(--mono);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
 
-.ib { background: none; border: none; color: var(--text2); cursor: pointer; padding: 2px 5px; border-radius: 4px; font-size: 13px; line-height: 1; transition: color .1s, background .1s; flex-shrink: 0; height: 22px; display: flex; align-items: center; }
-.ib:hover { color: var(--text); background: var(--bg4); }
-.ib:disabled { opacity: .2; cursor: default; pointer-events: none; }
+/* ══ BODY ══ */
+#body{display:flex;flex:1;overflow:hidden}
 
-#tree { flex: 1; overflow-y: auto; padding: 3px 0; }
-#tree::-webkit-scrollbar { width: 3px; }
-#tree::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+/* ══ SIDEBAR ══ */
+#sidebar{
+  width:220px;min-width:140px;display:flex;flex-direction:column;
+  background:var(--bg2);border-right:1px solid var(--border);flex-shrink:0;overflow:hidden
+}
+#sideHead{
+  display:flex;align-items:center;gap:2px;padding:4px 6px;
+  border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg3);min-height:34px
+}
+#pathCrumb{font-size:10px;font-family:var(--mono);color:var(--accent);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.sb-btn{background:none;border:none;color:var(--text2);cursor:pointer;padding:2px 4px;border-radius:4px;font-size:12px;line-height:1;transition:color .1s,background .1s;flex-shrink:0;height:22px;display:flex;align-items:center}
+.sb-btn:hover{color:var(--text);background:var(--bg4)}
+.sb-btn:disabled{opacity:.2;cursor:default;pointer-events:none}
 
-.ti { display: flex; align-items: center; gap: 5px; padding: 3.5px 8px 3.5px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; border-radius: 4px; margin: 1px 4px; transition: background .1s; color: var(--text); min-width: 0; }
-.ti:hover { background: var(--bg3); }
-.ti.active { background: rgba(56,189,248,.1); color: var(--accent); }
-.ti .ico { width: 14px; text-align: center; flex-shrink: 0; font-size: 11px; }
-.ti .nm  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.ti .sz  { font-size: 9px; color: var(--text3); flex-shrink: 0; }
+#tree{flex:1;overflow-y:auto;padding:3px 0}
+#tree::-webkit-scrollbar{width:3px}
+#tree::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
-.ext-html .ico{color:#e34c26} .ext-css .ico{color:#2965f1} .ext-js .ico{color:var(--yellow)}
-.ext-ts .ico{color:#60a5fa}   .ext-php .ico{color:#22d3ee} .ext-py .ico{color:#60a5fa}
-.ext-json .ico{color:var(--green)} .ext-md .ico{color:var(--teal)} .ext-txt .ico{color:var(--text2)}
-.ext-svg .ico{color:var(--orange)} .ext-img .ico{color:var(--orange)}
+.ti{display:flex;align-items:center;gap:5px;padding:3px 8px 3px 10px;font-size:11.5px;font-family:var(--mono);cursor:pointer;border-radius:4px;margin:1px 4px;transition:background .1s;color:var(--text);min-width:0}
+.ti:hover{background:var(--bg3)}
+.ti.active{background:rgba(56,189,248,.1);color:var(--accent)}
+.ti .ico{width:14px;text-align:center;flex-shrink:0;font-size:11px}
+.ti .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ti .sz{font-size:9px;color:var(--text3);flex-shrink:0}
+.ext-html .ico{color:#e34c26}.ext-css .ico{color:#2965f1}.ext-js .ico{color:var(--yellow)}
+.ext-ts .ico{color:#60a5fa}.ext-php .ico{color:#22d3ee}.ext-py .ico{color:#60a5fa}
+.ext-json .ico{color:var(--green)}.ext-md .ico{color:var(--teal)}.ext-txt .ico{color:var(--text2)}
+.ext-svg .ico{color:var(--orange)}.ext-img .ico{color:var(--orange)}
 
-/* ── CTX MENU ── */
-#ctxMenu { position: fixed; background: var(--bg3); border: 1px solid var(--border2); border-radius: 7px; padding: 4px; z-index: 2000; min-width: 160px; box-shadow: 0 12px 40px rgba(0,0,0,.6); display: none; animation: pop .1s ease; }
-@keyframes pop { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
-#ctxMenu button { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; color: var(--text); font-family: var(--mono); font-size: 12px; padding: 6px 10px; cursor: pointer; border-radius: 4px; transition: background .1s; }
-#ctxMenu button:hover { background: var(--bg4); }
-#ctxMenu button.danger { color: var(--red); }
-#ctxMenu hr { border: none; border-top: 1px solid var(--border); margin: 3px 0; }
+/* ══ CTX MENU ══ */
+#ctxMenu{position:fixed;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:4px;z-index:2000;min-width:160px;box-shadow:0 12px 40px rgba(0,0,0,.6);display:none;animation:drop .1s ease}
+#ctxMenu button{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;color:var(--text);font-family:var(--mono);font-size:11.5px;padding:6px 10px;cursor:pointer;border-radius:4px;transition:background .1s}
+#ctxMenu button:hover{background:var(--bg4)}
+#ctxMenu button.danger{color:var(--red)}
+#ctxMenu hr{border:none;border-top:1px solid var(--border);margin:3px 0}
 
-/* ── EDITOR AREA ── */
-#editor-area { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; }
+/* ══ EDITOR AREA ══ */
+#editor-area{display:flex;flex-direction:column;flex:1;overflow:hidden;min-width:0}
 
 /* TABS */
-#tabs-bar {
-  display: flex; align-items: flex-end;
-  background: var(--bg2); border-bottom: 1px solid var(--border);
-  overflow-x: auto; flex-shrink: 0; height: 38px; padding: 0 6px; gap: 2px;
+#tabs-bar{
+  display:flex;align-items:flex-end;
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  overflow-x:auto;flex-shrink:0;height:36px;padding:0 6px;gap:2px
 }
-#tabs-bar::-webkit-scrollbar { height: 2px; }
-#tabs-bar::-webkit-scrollbar-thumb { background: var(--border2); }
-
-.tab {
-  display: flex; align-items: center; gap: 6px; padding: 0 12px;
-  height: 32px; font-size: 11.5px; font-family: var(--mono);
-  cursor: pointer; white-space: nowrap; color: var(--text2);
-  transition: color .1s, background .1s; flex-shrink: 0;
-  border-radius: 5px 5px 0 0; background: var(--bg3);
-  border: 1px solid transparent; border-bottom: none;
-  margin-bottom: -1px; position: relative;
+#tabs-bar::-webkit-scrollbar{height:2px}
+#tabs-bar::-webkit-scrollbar-thumb{background:var(--border2)}
+.tab{
+  display:flex;align-items:center;gap:5px;padding:0 10px;height:30px;
+  font-size:11px;font-family:var(--mono);cursor:pointer;white-space:nowrap;
+  color:var(--text2);flex-shrink:0;border-radius:5px 5px 0 0;
+  background:var(--bg3);border:1px solid transparent;border-bottom:none;
+  margin-bottom:-1px;position:relative;transition:color .1s,background .1s
 }
-.tab:hover { color: var(--text); background: var(--bg4); }
-.tab.active { color: var(--text); background: var(--bg); border-color: var(--border); border-bottom-color: var(--bg); }
-.tab.active::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px; background:var(--accent); border-radius:2px 2px 0 0; }
-.tab.dirty .tname::after { content:' ●'; font-size:7px; color:var(--yellow); vertical-align:middle; }
-.tc { background:none; border:none; color:var(--text3); cursor:pointer; font-size:13px; line-height:1; padding:0; width:14px; text-align:center; border-radius:3px; transition:color .1s, background .1s; }
-.tc:hover { color: var(--red); background: rgba(248,113,113,.1); }
-
-/* EDIT TOOLBAR */
-#editBar {
-  display: none; align-items: center; gap: 5px;
-  padding: 5px 10px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0;
-}
-.eb { background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); font-family: var(--ui); font-size: 11px; font-weight: 600; padding: 0 10px; height: 26px; border-radius: 4px; cursor: pointer; transition: all .1s; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-.eb:hover { color: var(--text); border-color: var(--text3); background: var(--bg4); }
-.eb.save { background: var(--accent); color: #0e1117; border-color: var(--accent); font-weight: 700; }
-.eb.save:hover { opacity: .85; }
-.eb kbd { background: rgba(0,0,0,.2); border-radius: 3px; padding: 1px 4px; font-family: var(--mono); font-size: 9px; }
-#editInfo { margin-left: auto; font-size: 10px; font-family: var(--mono); color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab:hover{color:var(--text);background:var(--bg4)}
+.tab.active{color:var(--text);background:var(--bg);border-color:var(--border);border-bottom-color:var(--bg)}
+.tab.active::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--accent);border-radius:2px 2px 0 0}
+.tab.dirty .tname::after{content:' ●';font-size:7px;color:var(--yellow);vertical-align:middle}
+.tc{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;line-height:1;padding:0;width:14px;text-align:center;border-radius:3px;transition:color .1s,background .1s;flex-shrink:0}
+.tc:hover{color:var(--red);background:rgba(248,113,113,.1)}
 
 /* MONACO */
-#monaco-wrap { flex: 1; overflow: hidden; display: none; }
-#monaco-wrap.visible { display: block; }
-#monaco-editor { width: 100%; height: 100%; }
+#monaco-wrap{flex:1;overflow:hidden;display:none;position:relative}
+#monaco-wrap.visible{display:block}
+#monaco-editor{width:100%;height:100%}
 
 /* WELCOME */
-#welcome { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; background: var(--bg); }
-.w-title { font-size: 24px; font-weight: 800; color: var(--text3); letter-spacing: .05em; }
-.w-sub   { font-size: 12px; font-family: var(--mono); color: var(--text3); }
-.w-feats { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
-.w-feat  { display: flex; align-items: center; gap: 10px; font-size: 12px; font-family: var(--mono); color: var(--text2); }
-.w-feat span:first-child { color: var(--accent); width: 16px; text-align: center; }
+#welcome{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;background:var(--bg)}
+.w-logo{font-size:32px;font-weight:800;color:var(--text3);letter-spacing:.06em;margin-bottom:4px}
+.w-logo span{color:var(--accent)}
+.w-sub{font-size:11.5px;font-family:var(--mono);color:var(--text3);margin-bottom:8px}
+.w-shortcuts{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-top:8px}
+.w-sc{display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--mono);color:var(--text3)}
+.wk{background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:1px 6px;font-size:10px;color:var(--text2);white-space:nowrap}
 
 /* STATUSBAR */
-#statusbar { height: 22px; background: var(--accent); display: flex; align-items: center; padding: 0 12px; gap: 16px; flex-shrink: 0; }
-#statusbar > span { font-size: 10.5px; font-family: var(--mono); color: rgba(14,17,23,.85); }
-#statusbar .hi { color: #0e1117; font-weight: 700; }
-#sbRight { margin-left: auto; display: flex; gap: 16px; }
+#statusbar{
+  height:22px;background:var(--bg3);border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 12px;gap:14px;flex-shrink:0
+}
+#statusbar span{font-size:10px;font-family:var(--mono);color:var(--text2)}
+.sb-hi{color:var(--accent)!important;font-weight:600}
+.sb-badge{background:var(--bg4);border:1px solid var(--border2);border-radius:3px;padding:0 5px;height:14px;display:inline-flex;align-items:center;font-size:9.5px;color:var(--text2)}
+#sbRight{margin-left:auto;display:flex;gap:14px}
 
 /* MODAL */
-#modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:1500; display:none; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
-#modal-overlay.show { display:flex; }
-#modal { background:var(--bg3); border:1px solid var(--border2); border-radius:10px; padding:22px; min-width:300px; max-width:440px; width:90%; box-shadow:0 24px 80px rgba(0,0,0,.6); animation:pop .15s ease; }
-#modal h3 { font-size:14px; font-weight:700; margin-bottom:14px; }
-#modal input { width:100%; background:var(--bg4); border:1px solid var(--border2); color:var(--text); font-family:var(--mono); font-size:13px; padding:8px 11px; border-radius:6px; outline:none; }
-#modal input:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(56,189,248,.1); }
-.m-btns { display:flex; gap:8px; margin-top:14px; justify-content:flex-end; }
-.m-btns button { font-family:var(--ui); font-size:12px; font-weight:600; padding:6px 16px; border-radius:5px; cursor:pointer; border:1px solid var(--border2); transition:all .1s; }
-.m-btns .ok { background:var(--accent); color:#0e1117; border-color:var(--accent); }
-.m-btns .ok:hover { opacity:.85; }
-.m-btns .cancel { background:var(--bg4); color:var(--text2); }
-.m-btns .cancel:hover { color:var(--text); }
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+#modal-overlay.show{display:flex}
+#modal{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:22px;min-width:300px;max-width:440px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.7);animation:drop .15s ease}
+#modal h3{font-size:13px;font-weight:700;margin-bottom:14px}
+#modal input{width:100%;background:var(--bg4);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:13px;padding:8px 11px;border-radius:6px;outline:none}
+#modal input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(56,189,248,.1)}
+.m-btns{display:flex;gap:8px;margin-top:14px;justify-content:flex-end}
+.m-btns button{font-family:var(--ui);font-size:12px;font-weight:600;padding:6px 16px;border-radius:5px;cursor:pointer;border:1px solid var(--border2);transition:all .1s}
+.m-btns .ok{background:var(--accent);color:#0d1017;border-color:var(--accent)}
+.m-btns .ok:hover{opacity:.85}
+.m-btns .cancel{background:var(--bg4);color:var(--text2)}
+.m-btns .cancel:hover{color:var(--text)}
 
 /* TOAST */
-#toast { position:fixed; bottom:36px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--bg3); border:1px solid var(--border2); color:var(--text); font-family:var(--mono); font-size:12px; padding:7px 16px; border-radius:7px; z-index:1000; opacity:0; transition:opacity .18s, transform .18s; pointer-events:none; box-shadow:0 8px 30px rgba(0,0,0,.5); white-space:nowrap; }
-#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-#toast.ok  { border-color:var(--green); color:var(--green); }
-#toast.err { border-color:var(--red); color:var(--red); }
+#toast{position:fixed;bottom:34px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11.5px;padding:7px 16px;border-radius:7px;z-index:1000;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.5);white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{border-color:var(--green);color:var(--green)}
+#toast.err{border-color:var(--red);color:var(--red)}
 
-.spin { display:inline-block; width:11px; height:11px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .6s linear infinite; }
-@keyframes spin { to{transform:rotate(360deg)} }
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-#dropZone { position:absolute; inset:0; background:rgba(56,189,248,.05); border:2px dashed var(--accent); display:none; align-items:center; justify-content:center; font-size:14px; color:var(--accent); font-family:var(--mono); z-index:10; pointer-events:none; border-radius:4px; }
-#dropZone.show { display:flex; }
+#dropZone{position:absolute;inset:0;background:rgba(56,189,248,.05);border:2px dashed var(--accent);display:none;align-items:center;justify-content:center;font-size:14px;color:var(--accent);font-family:var(--mono);z-index:10;pointer-events:none}
+#dropZone.show{display:flex}
 </style>
 </head>
 <body>
 
 <!-- TOPBAR -->
 <div id="topbar">
-  <div class="logo">FTP<span>Studio</span></div>
-  <div class="f">
-    <input class="tb" id="iProxy" placeholder="https://…/api/ftp">
-    <input class="tb" id="iToken" type="password" placeholder="token">
+  <div class="logo">
+    <div class="logo-dot" id="dot"></div>
+    FTP<span>Studio</span>
   </div>
-  <div class="vsep"></div>
-  <div class="f">
-    <input class="tb" id="iHost" placeholder="ftp.serveur.com">
-    <input class="tb" id="iUser" placeholder="user">
-    <input class="tb" id="iPass" type="password" placeholder="pass">
-    <input class="tb" id="iPort" value="21">
+
+  <!-- MENU BAR -->
+  <div id="menubar">
+
+    <div class="mb-item" id="menu-fichier">
+      <button class="mb-btn">Fichier</button>
+      <div class="mb-dropdown">
+        <button class="dd-item" id="dd-new">📄 Nouveau fichier<span class="dk">Ctrl+N</span></button>
+        <button class="dd-item" id="dd-newdir">📁 Nouveau dossier</button>
+        <div class="dd-sep"></div>
+        <button class="dd-item" id="dd-save">💾 Sauvegarder<span class="dk">Ctrl+S</span></button>
+        <button class="dd-item" id="dd-saveas">Enregistrer sous…</button>
+        <button class="dd-item" id="dd-dl">⬇ Télécharger</button>
+        <div class="dd-sep"></div>
+        <button class="dd-item" id="dd-upload">⬆ Uploader des fichiers</button>
+        <input type="file" id="fileInput" style="display:none" multiple>
+        <div class="dd-sep"></div>
+        <button class="dd-item" id="dd-close">Fermer l'onglet<span class="dk">Ctrl+W</span></button>
+      </div>
+    </div>
+
+    <div class="mb-item" id="menu-edition">
+      <button class="mb-btn">Édition</button>
+      <div class="mb-dropdown">
+        <button class="dd-item" id="dd-find">🔍 Rechercher<span class="dk">Ctrl+F</span></button>
+        <button class="dd-item" id="dd-replace">🔁 Remplacer<span class="dk">Ctrl+H</span></button>
+        <div class="dd-sep"></div>
+        <button class="dd-item" id="dd-format">⬚ Formater<span class="dk">Shift+Alt+F</span></button>
+        <button class="dd-item" id="dd-fold">Plier tout</button>
+      </div>
+    </div>
+
+    <div class="mb-item" id="menu-nav">
+      <button class="mb-btn">Navigation</button>
+      <div class="mb-dropdown">
+        <button class="dd-item" id="dd-up">↑ Dossier parent</button>
+        <button class="dd-item" id="dd-refresh">⟳ Rafraîchir</button>
+        <div class="dd-sep"></div>
+        <button class="dd-item" id="dd-goto">Aller à la ligne…<span class="dk">Ctrl+G</span></button>
+      </div>
+    </div>
+
+    <div class="mb-item" id="menu-conn">
+      <button class="mb-btn">Connexion</button>
+      <div class="mb-dropdown">
+        <button class="dd-item" id="dd-connect">🔌 Connecter / Déconnecter</button>
+        <div class="dd-sep"></div>
+        <div style="padding:4px 12px 6px">
+          <div style="font-size:10px;color:var(--text2);font-family:var(--mono);margin-bottom:6px">PROXY VERCEL</div>
+          <input class="ci" id="ciProxy" placeholder="https://…/api/ftp" style="width:100%;margin-bottom:5px">
+          <input class="ci" id="ciToken" type="password" placeholder="token secret" style="width:100%;margin-bottom:8px">
+          <div style="font-size:10px;color:var(--text2);font-family:var(--mono);margin-bottom:6px">SERVEUR FTP</div>
+          <div style="display:flex;gap:4px;margin-bottom:4px">
+            <input class="ci" id="ciHost" placeholder="ftp.serveur.com" style="flex:1">
+            <input class="ci" id="ciPort" value="21" style="width:44px">
+          </div>
+          <div style="display:flex;gap:4px">
+            <input class="ci" id="ciUser" placeholder="user" style="flex:1">
+            <input class="ci" id="ciPass" type="password" placeholder="pass" style="flex:1">
+          </div>
+        </div>
+        <button class="dd-item" style="margin-top:2px" id="dd-conn2">🔌 Connecter</button>
+      </div>
+    </div>
+
+  </div><!-- /menubar -->
+
+  <div style="display:flex;align-items:center;gap:8px;padding:0 12px;border-left:1px solid var(--border);height:100%;flex-shrink:0">
+    <span id="connStatus" style="font-size:10.5px;font-family:var(--mono);color:var(--text2);white-space:nowrap">Non connecté</span>
   </div>
-  <button id="btnConnect">Connecter</button>
-  <div class="vsep"></div>
-  <div id="dot"></div>
-  <div id="statusMsg">Non connecté</div>
 </div>
 
 <!-- BODY -->
 <div id="body">
+
   <!-- SIDEBAR -->
   <div id="sidebar">
     <div id="sideHead">
-      <div id="pathDisplay">/</div>
-      <button class="ib" id="btnUp"      title="Parent"          disabled>↑</button>
-      <button class="ib" id="btnRefresh" title="Rafraîchir"      disabled>⟳</button>
-      <button class="ib" id="btnNewFile" title="Nouveau fichier"  disabled>＋</button>
-      <button class="ib" id="btnNewDir"  title="Nouveau dossier" disabled>📁</button>
-      <button class="ib" id="btnUpload"  title="Upload"          disabled>⬆</button>
-      <input type="file" id="fileInput" style="display:none" multiple>
+      <div id="pathCrumb">/</div>
+      <button class="sb-btn" id="btnUp"      title="Parent"  disabled>↑</button>
+      <button class="sb-btn" id="btnRefresh" title="Refresh" disabled>⟳</button>
     </div>
     <div id="tree">
-      <div style="padding:18px 12px;color:var(--text3);font-size:11px;font-family:var(--mono)">← Connectez-vous</div>
+      <div style="padding:16px 12px;color:var(--text3);font-size:11px;font-family:var(--mono)">← Connectez-vous via<br>le menu Connexion</div>
     </div>
   </div>
 
@@ -245,23 +301,18 @@ input.tb::placeholder { color: var(--text3); }
     <div id="tabs-bar"></div>
 
     <div id="welcome">
-      <div class="w-title">FTP Studio</div>
+      <div class="w-logo">FTP<span>Studio</span></div>
       <div class="w-sub">Moteur Monaco — identique à VS Code</div>
-      <div class="w-feats">
-        <div class="w-feat"><span>🔍</span><span>Rechercher &amp; Remplacer — <kbd style="background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px">Ctrl+H</kbd></span></div>
-        <div class="w-feat"><span>✦</span><span>Multi-curseurs — <kbd style="background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px">Alt+Clic</kbd></span></div>
-        <div class="w-feat"><span>🗺</span><span>Minimap intégrée</span></div>
-        <div class="w-feat"><span>⚡</span><span>Coloration HTML, CSS, JS, PHP, Python, JSON…</span></div>
-        <div class="w-feat"><span>💾</span><span>Sauvegarde directe — <kbd style="background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px">Ctrl+S</kbd></span></div>
+      <div class="w-shortcuts">
+        <div class="w-sc"><span class="wk">Ctrl+S</span> Sauvegarder</div>
+        <div class="w-sc"><span class="wk">Ctrl+F</span> Rechercher</div>
+        <div class="w-sc"><span class="wk">Ctrl+H</span> Remplacer</div>
+        <div class="w-sc"><span class="wk">Ctrl+G</span> Aller à la ligne</div>
+        <div class="w-sc"><span class="wk">Alt+Clic</span> Multi-curseurs</div>
+        <div class="w-sc"><span class="wk">Tab</span> Complétion Emmet</div>
+        <div class="w-sc"><span class="wk">Ctrl+/</span> Commenter</div>
+        <div class="w-sc"><span class="wk">Shift+Alt+F</span> Formater</div>
       </div>
-    </div>
-
-    <div id="editBar">
-      <button class="eb save" id="btnSave">💾 Sauvegarder <kbd>Ctrl+S</kbd></button>
-      <button class="eb" id="btnSaveAs">Enregistrer sous…</button>
-      <button class="eb" id="btnDownload">⬇ Télécharger</button>
-      <button class="eb" id="btnFormat" title="Formater le code">⬚ Formater</button>
-      <div id="editInfo"></div>
     </div>
 
     <div id="monaco-wrap">
@@ -273,13 +324,12 @@ input.tb::placeholder { color: var(--text3); }
 
 <!-- STATUSBAR -->
 <div id="statusbar">
-  <span id="sbPath" class="hi">/</span>
-  <span id="sbLang">—</span>
+  <span id="sbPath" class="sb-hi">/</span>
+  <span id="sbLang" class="sb-badge">—</span>
   <div id="sbRight">
     <span id="sbLines">0 lignes</span>
     <span id="sbSize">—</span>
     <span id="sbCursor">Ln 1, Col 1</span>
-    <span id="sbEncoding">UTF-8</span>
   </div>
 </div>
 
@@ -306,166 +356,65 @@ input.tb::placeholder { color: var(--text3); }
 
 <div id="toast"></div>
 
-<!-- Monaco loader -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 
 // ══ CREDENTIALS ══
-const CRED_KEY = 'ftpstudio_v2';
+const CRED_KEY = 'ftpstudio_v3';
 function saveCreds() {
   localStorage.setItem(CRED_KEY, JSON.stringify({
-    proxy: $('iProxy').value, token: $('iToken').value,
-    host:  $('iHost').value,  user:  $('iUser').value,
-    pass:  $('iPass').value,  port:  $('iPort').value,
+    proxy: $('ciProxy').value, token: $('ciToken').value,
+    host:  $('ciHost').value,  user:  $('ciUser').value,
+    pass:  $('ciPass').value,  port:  $('ciPort').value,
   }));
 }
 function loadCreds() {
   try {
     const c = JSON.parse(localStorage.getItem(CRED_KEY) || '{}');
-    if (c.proxy) $('iProxy').value = c.proxy;
-    if (c.token) $('iToken').value = c.token;
-    if (c.host)  $('iHost').value  = c.host;
-    if (c.user)  $('iUser').value  = c.user;
-    if (c.pass)  $('iPass').value  = c.pass;
-    if (c.port)  $('iPort').value  = c.port;
+    if (c.proxy) $('ciProxy').value = c.proxy;
+    if (c.token) $('ciToken').value = c.token;
+    if (c.host)  $('ciHost').value  = c.host;
+    if (c.user)  $('ciUser').value  = c.user;
+    if (c.pass)  $('ciPass').value  = c.pass;
+    if (c.port)  $('ciPort').value  = c.port;
   } catch(e) {}
 }
-['iProxy','iToken','iHost','iUser','iPass','iPort'].forEach(id => {
-  $(id).addEventListener('change', saveCreds);
-  $(id).addEventListener('blur', saveCreds);
-});
-// Pre-fill defaults if no saved creds
-const saved = localStorage.getItem(CRED_KEY);
-if (!saved) {
-  $('iProxy').value = 'https://mahea.vercel.app/api/ftp';
-}
+['ciProxy','ciToken','ciHost','ciUser','ciPass','ciPort'].forEach(id =>
+  $(id).addEventListener('change', saveCreds));
+
+// Default proxy
+if (!localStorage.getItem(CRED_KEY)) $('ciProxy').value = 'https://mahea.vercel.app/api/ftp';
 loadCreds();
 
 // ══ STATE ══
 let connected = false, currentPath = '/', tabs = [], activeTab = null, ctxTarget = null;
-let monacoEditor = null, monacoReady = false;
-let pendingActivation = null;
+let monacoEditor = null, monacoReady = false, pendingAct = null;
 
-// ══ MONACO INIT ══
-require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
-
-require(['vs/editor/editor.main'], function() {
-  // Define custom dark theme — no purple
-  monaco.editor.defineTheme('ftpstudio', {
-    base: 'vs-dark',
-    inherit: true,
-    rules: [
-      { token: 'comment',    foreground: '3d4f6e', fontStyle: 'italic' },
-      { token: 'keyword',    foreground: '38bdf8' },
-      { token: 'string',     foreground: '34d399' },
-      { token: 'number',     foreground: 'fb923c' },
-      { token: 'type',       foreground: '2dd4bf' },
-      { token: 'function',   foreground: 'fbbf24' },
-      { token: 'variable',   foreground: 'cbd5e1' },
-      { token: 'operator',   foreground: '7dd3fc' },
-      { token: 'delimiter',  foreground: '8892b0' },
-      { token: 'tag',        foreground: 'f87171' },
-      { token: 'attribute.name',  foreground: 'fbbf24' },
-      { token: 'attribute.value', foreground: '34d399' },
-      { token: 'metatag',    foreground: '38bdf8' },
-      { token: 'regexp',     foreground: 'fb923c' },
-      { token: 'constant',   foreground: 'f87171' },
-      { token: 'class',      foreground: '2dd4bf' },
-    ],
-    colors: {
-      'editor.background':           '#0e1117',
-      'editor.foreground':           '#cbd5e1',
-      'editorLineNumber.foreground': '#252d42',
-      'editorLineNumber.activeForeground': '#4b5a7a',
-      'editor.lineHighlightBackground':   '#141720',
-      'editor.selectionBackground':       '#38bdf830',
-      'editor.inactiveSelectionBackground': '#38bdf818',
-      'editorCursor.foreground':     '#38bdf8',
-      'editorWhitespace.foreground': '#1e2436',
-      'editorIndentGuide.background': '#1e2436',
-      'editorIndentGuide.activeBackground': '#2a3050',
-      'editor.findMatchBackground':  '#fbbf2440',
-      'editor.findMatchHighlightBackground': '#fbbf2420',
-      'editorWidget.background':     '#1b1f2e',
-      'editorWidget.border':         '#2a3050',
-      'input.background':            '#0e1117',
-      'input.border':                '#2a3050',
-      'input.foreground':            '#cbd5e1',
-      'focusBorder':                 '#38bdf8',
-      'scrollbar.shadow':            '#00000060',
-      'scrollbarSlider.background':  '#2a305060',
-      'scrollbarSlider.hoverBackground': '#2a3050aa',
-      'minimap.background':          '#0e1117',
-      'editorGutter.background':     '#141720',
-    }
+// ══ DROPDOWN MENUS ══
+document.querySelectorAll('.mb-item').forEach(item => {
+  item.querySelector('.mb-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.mb-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
   });
-
-  monacoEditor = monaco.editor.create($('monaco-editor'), {
-    theme: 'ftpstudio',
-    language: 'plaintext',
-    fontSize: 13,
-    fontFamily: "'JetBrains Mono', monospace",
-    fontLigatures: true,
-    lineHeight: 22,
-    minimap: { enabled: true, scale: 1 },
-    scrollBeyondLastLine: false,
-    wordWrap: 'off',
-    automaticLayout: true,
-    tabSize: 2,
-    insertSpaces: true,
-    detectIndentation: true,
-    renderWhitespace: 'selection',
-    bracketPairColorization: { enabled: true },
-    guides: { bracketPairs: true, indentation: true },
-    suggestOnTriggerCharacters: true,
-    quickSuggestions: true,
-    formatOnPaste: false,
-    folding: true,
-    lineNumbers: 'on',
-    glyphMargin: false,
-    renderLineHighlight: 'line',
-    smoothScrolling: true,
-    cursorBlinking: 'smooth',
-    cursorSmoothCaretAnimation: 'on',
-    padding: { top: 10, bottom: 10 },
-  });
-
-  // Ctrl+S → save
-  monacoEditor.addCommand(
-    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
-    () => saveActive()
-  );
-
-  // Cursor position → statusbar
-  monacoEditor.onDidChangeCursorPosition(e => {
-    $('sbCursor').textContent = `Ln ${e.position.lineNumber}, Col ${e.position.column}`;
-  });
-
-  // Content change → dirty flag
-  monacoEditor.onDidChangeModelContent(() => {
-    const tab = tabs.find(t => t.id === activeTab);
-    if (!tab) return;
-    tab.content = monacoEditor.getValue();
-    tab.dirty = true;
-    renderTabs();
-    updateSB(tab);
-  });
-
-  monacoReady = true;
-
-  // If a tab was waiting for Monaco
-  if (pendingActivation !== null) {
-    activateTab(pendingActivation);
-    pendingActivation = null;
-  }
 });
+document.addEventListener('click', () =>
+  document.querySelectorAll('.mb-item').forEach(i => i.classList.remove('open')));
+// Prevent dropdown content clicks from closing
+document.querySelectorAll('.mb-dropdown').forEach(d =>
+  d.addEventListener('click', e => e.stopPropagation()));
+
+function closeMenus() {
+  document.querySelectorAll('.mb-item').forEach(i => i.classList.remove('open'));
+}
 
 // ══ API ══
 const cfg = () => ({
-  proxy: $('iProxy').value.trim(), token: $('iToken').value.trim(),
-  host:  $('iHost').value.trim(),  user:  $('iUser').value.trim(),
-  pass:  $('iPass').value.trim(),  port:  $('iPort').value.trim() || '21',
+  proxy: $('ciProxy').value.trim(), token: $('ciToken').value.trim(),
+  host:  $('ciHost').value.trim(),  user:  $('ciUser').value.trim(),
+  pass:  $('ciPass').value.trim(),  port:  $('ciPort').value.trim() || '21',
 });
 
 async function api(action, extra={}) {
@@ -473,7 +422,7 @@ async function api(action, extra={}) {
   if (!c.proxy) throw new Error('URL proxy manquante');
   const r = await fetch(c.proxy, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Auth-Token': c.token },
+    headers: { 'Content-Type':'application/json', 'X-Auth-Token': c.token },
     body: JSON.stringify({ action, host:c.host, user:c.user, pass:c.pass, port:c.port, ...extra }),
   });
   const d = await r.json();
@@ -484,50 +433,51 @@ async function api(action, extra={}) {
 // ══ TOAST ══
 let _tt;
 function toast(msg, type='') {
-  const t = $('toast'); t.textContent = msg; t.className = 'show ' + type;
-  clearTimeout(_tt); _tt = setTimeout(() => t.className = '', 2600);
+  const t=$('toast'); t.textContent=msg; t.className='show '+type;
+  clearTimeout(_tt); _tt=setTimeout(()=>t.className='',2600);
 }
 
 // ══ CONNECT ══
-$('btnConnect').addEventListener('click', async () => {
-  if (connected) { disconnect(); return; }
+async function connect() {
+  closeMenus();
   const c = cfg();
-  if (!c.proxy || !c.host || !c.user) { toast('Remplissez proxy, host et user','err'); return; }
-  $('statusMsg').textContent = 'Connexion…';
+  if (!c.proxy || !c.host || !c.user) { toast('Remplissez les champs dans le menu Connexion','err'); return; }
+  $('connStatus').textContent = 'Connexion…';
   try {
     await loadDir('/');
     connected = true;
-    $('dot').className = 'on';
-    $('statusMsg').textContent = 'Connecté — ' + c.host;
-    $('btnConnect').textContent = 'Déconnecter';
-    $('btnConnect').classList.add('disc');
-    ['btnUp','btnRefresh','btnNewFile','btnNewDir','btnUpload'].forEach(id => $(id).disabled = false);
+    $('dot').className = 'logo-dot on';
+    $('connStatus').textContent = c.host;
+    $('btnUp').disabled = false;
+    $('btnRefresh').disabled = false;
     saveCreds();
     toast('Connecté à ' + c.host, 'ok');
   } catch(e) {
-    $('dot').className = 'err';
-    $('statusMsg').textContent = e.message;
+    $('dot').className = 'logo-dot err';
+    $('connStatus').textContent = 'Erreur';
     toast(e.message, 'err');
   }
-});
+}
 
 function disconnect() {
   connected = false;
-  $('dot').className = '';
-  $('statusMsg').textContent = 'Non connecté';
-  $('btnConnect').textContent = 'Connecter';
-  $('btnConnect').classList.remove('disc');
-  ['btnUp','btnRefresh','btnNewFile','btnNewDir','btnUpload'].forEach(id => $(id).disabled = true);
-  $('tree').innerHTML = '<div style="padding:18px 12px;color:var(--text3);font-size:11px;font-family:var(--mono)">Déconnecté</div>';
+  $('dot').className = 'logo-dot';
+  $('connStatus').textContent = 'Déconnecté';
+  $('btnUp').disabled = true;
+  $('btnRefresh').disabled = true;
+  $('tree').innerHTML = '<div style="padding:16px 12px;color:var(--text3);font-size:11px;font-family:var(--mono)">Déconnecté</div>';
   toast('Déconnecté');
 }
+
+$('dd-connect').addEventListener('click', () => connected ? disconnect() : connect());
+$('dd-conn2').addEventListener('click', connect);
 
 // ══ FILE TREE ══
 async function loadDir(path) {
   $('tree').innerHTML = '<div style="padding:12px;display:flex;gap:8px;align-items:center;color:var(--text2);font-size:11px;font-family:var(--mono)"><span class="spin"></span> Chargement…</div>';
   const d = await api('list', {path});
   currentPath = path;
-  $('pathDisplay').textContent = path;
+  $('pathCrumb').textContent = path;
   $('sbPath').textContent = path;
   $('btnUp').disabled = !connected || path === '/';
   renderTree(d.items, path);
@@ -537,267 +487,438 @@ const EC  = {html:'html',htm:'html',css:'css',js:'js',jsx:'js',ts:'ts',tsx:'ts',
 const EI  = {html:'🌐',htm:'🌐',css:'🎨',js:'⚡',jsx:'⚡',ts:'🔷',tsx:'🔷',php:'🐘',py:'🐍',json:'{}',md:'📝',txt:'📄',svg:'◈',png:'🖼',jpg:'🖼',jpeg:'🖼',gif:'🖼',webp:'🖼'};
 const LID = {html:'html',htm:'html',css:'css',js:'javascript',jsx:'javascript',ts:'typescript',tsx:'typescript',php:'php',py:'python',json:'json',md:'markdown',sh:'shell',bash:'shell',svg:'xml',xml:'xml',txt:'plaintext'};
 
-function getIco(name, isDir) { return isDir ? '📂' : (EI[name.split('.').pop().toLowerCase()] || '📄'); }
-function getLang(name) { return LID[name.split('.').pop().toLowerCase()] || 'plaintext'; }
-function fmtSize(b) {
-  if (!b) return '';
-  if (b < 1024) return b + 'B';
-  if (b < 1048576) return (b/1024).toFixed(1) + 'K';
-  return (b/1048576).toFixed(1) + 'M';
-}
+function getIco(name,isDir){return isDir?'📂':(EI[name.split('.').pop().toLowerCase()]||'📄')}
+function getLang(name){return LID[name.split('.').pop().toLowerCase()]||'plaintext'}
+function fmtSize(b){if(!b)return '';if(b<1024)return b+'B';if(b<1048576)return (b/1024).toFixed(1)+'K';return (b/1048576).toFixed(1)+'M'}
 
 function renderTree(items, basePath) {
-  const tree = $('tree');
-  if (!items.length) {
-    tree.innerHTML = '<div style="padding:12px;color:var(--text3);font-size:11px;font-family:var(--mono)">Dossier vide</div>';
-    return;
-  }
-  items.sort((a,b) => a.type===b.type ? a.name.localeCompare(b.name) : a.type==='dir' ? -1 : 1);
-  tree.innerHTML = '';
-  for (const item of items) {
-    const fp = (basePath==='/'?'':basePath) + '/' + item.name;
-    const ext = item.name.split('.').pop().toLowerCase();
-    const ec = item.type==='dir' ? 'is-dir' : 'ext-'+(EC[ext]||'txt');
-    const div = document.createElement('div');
-    div.className = 'ti ' + ec;
-    div.innerHTML = `<span class="ico">${getIco(item.name,item.type==='dir')}</span><span class="nm">${item.name}</span><span class="sz">${item.type==='file'?fmtSize(item.size):''}</span>`;
-    div.addEventListener('click', () => {
-      if (item.type==='dir') { loadDir(fp); }
-      else {
-        openFile(fp, item.name);
-        document.querySelectorAll('.ti').forEach(t=>t.classList.remove('active'));
-        div.classList.add('active');
-      }
+  const tree=$('tree');
+  if(!items.length){tree.innerHTML='<div style="padding:12px;color:var(--text3);font-size:11px;font-family:var(--mono)">Dossier vide</div>';return}
+  items.sort((a,b)=>a.type===b.type?a.name.localeCompare(b.name):a.type==='dir'?-1:1);
+  tree.innerHTML='';
+  for(const item of items){
+    const fp=(basePath==='/'?'':basePath)+'/'+item.name;
+    const ext=item.name.split('.').pop().toLowerCase();
+    const ec=item.type==='dir'?'is-dir':'ext-'+(EC[ext]||'txt');
+    const div=document.createElement('div');
+    div.className='ti '+ec;
+    div.innerHTML=`<span class="ico">${getIco(item.name,item.type==='dir')}</span><span class="nm">${item.name}</span><span class="sz">${item.type==='file'?fmtSize(item.size):''}</span>`;
+    div.addEventListener('click',()=>{
+      if(item.type==='dir'){loadDir(fp)}
+      else{openFile(fp,item.name);document.querySelectorAll('.ti').forEach(t=>t.classList.remove('active'));div.classList.add('active')}
     });
-    div.addEventListener('contextmenu', e => {
-      e.preventDefault();
-      ctxTarget = {path:fp, name:item.name, type:item.type};
-      showCtx(e.clientX, e.clientY, item.type);
-    });
+    div.addEventListener('contextmenu',e=>{e.preventDefault();ctxTarget={path:fp,name:item.name,type:item.type};showCtx(e.clientX,e.clientY,item.type)});
     tree.appendChild(div);
   }
 }
 
 // ══ OPEN FILE ══
-async function openFile(path, name) {
-  let tab = tabs.find(t => t.path===path);
-  if (tab) { activateTab(tab.id); return; }
+async function openFile(path,name){
+  let tab=tabs.find(t=>t.path===path);
+  if(tab){activateTab(tab.id);return}
   toast('Chargement…');
-  try {
-    const d = await api('get', {path});
-    const raw = atob(d.content);
-    const bytes = Uint8Array.from(raw, c=>c.charCodeAt(0));
-    const content = new TextDecoder('utf-8').decode(bytes);
-    const id = Date.now() + Math.random();
-    tab = {id, path, name, content, dirty:false, ext:name.split('.').pop().toLowerCase(), model:null};
-    tabs.push(tab);
-    renderTabs();
-    activateTab(id);
-    toast('Ouvert', 'ok');
-  } catch(e) { toast(e.message, 'err'); }
+  try{
+    const d=await api('get',{path});
+    const raw=atob(d.content);
+    const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
+    const content=new TextDecoder('utf-8').decode(bytes);
+    const id=Date.now()+Math.random();
+    tab={id,path,name,content,dirty:false,ext:name.split('.').pop().toLowerCase(),model:null};
+    tabs.push(tab);renderTabs();activateTab(id);toast('Ouvert','ok');
+  }catch(e){toast(e.message,'err')}
 }
 
 // ══ TABS ══
-function renderTabs() {
-  const bar = $('tabs-bar'); bar.innerHTML = '';
-  for (const tab of tabs) {
-    const div = document.createElement('div');
-    div.className = 'tab' + (tab.id===activeTab?' active':'') + (tab.dirty?' dirty':'');
-    div.innerHTML = `<span style="font-size:11px;opacity:.6">${getIco(tab.name,false)}</span><span class="tname">${tab.name}</span><button class="tc" title="Fermer">×</button>`;
-    div.addEventListener('click', e => { if (!e.target.classList.contains('tc')) activateTab(tab.id); });
-    div.querySelector('.tc').addEventListener('click', e => { e.stopPropagation(); closeTab(tab.id); });
+function renderTabs(){
+  const bar=$('tabs-bar');bar.innerHTML='';
+  for(const tab of tabs){
+    const div=document.createElement('div');
+    div.className='tab'+(tab.id===activeTab?' active':'')+(tab.dirty?' dirty':'');
+    div.innerHTML=`<span style="font-size:11px;opacity:.6">${getIco(tab.name,false)}</span><span class="tname">${tab.name}</span><button class="tc">×</button>`;
+    div.addEventListener('click',e=>{if(!e.target.classList.contains('tc'))activateTab(tab.id)});
+    div.querySelector('.tc').addEventListener('click',e=>{e.stopPropagation();closeTab(tab.id)});
     bar.appendChild(div);
   }
 }
 
-function activateTab(id) {
-  if (!monacoReady) { pendingActivation = id; return; }
-
-  activeTab = id;
-  const tab = tabs.find(t=>t.id===id);
-  if (!tab) { showWelcome(); return; }
-
-  $('welcome').style.display   = 'none';
-  $('editBar').style.display   = 'flex';
+function activateTab(id){
+  if(!monacoReady){pendingAct=id;return}
+  activeTab=id;
+  const tab=tabs.find(t=>t.id===id);
+  if(!tab){showWelcome();return}
+  $('welcome').style.display='none';
   $('monaco-wrap').classList.add('visible');
-
-  // Create or reuse Monaco model (preserves undo history per file)
-  const lang = getLang(tab.name);
-  if (!tab.model) {
-    tab.model = monaco.editor.createModel(tab.content, lang);
-  }
+  const lang=getLang(tab.name);
+  if(!tab.model) tab.model=monaco.editor.createModel(tab.content,lang);
   monacoEditor.setModel(tab.model);
   monacoEditor.focus();
-
-  $('sbLang').textContent   = lang.toUpperCase();
-  $('editInfo').textContent = tab.path;
-  updateSB(tab);
-  renderTabs();
+  $('sbLang').textContent=lang.toUpperCase();
+  $('sbPath').textContent=tab.path;
+  updateSB(tab);renderTabs();
 }
 
-function showWelcome() {
-  $('welcome').style.display = 'flex';
-  $('editBar').style.display = 'none';
+function showWelcome(){
+  $('welcome').style.display='flex';
   $('monaco-wrap').classList.remove('visible');
-  activeTab = null;
-  renderTabs();
+  activeTab=null;renderTabs();
 }
 
-function closeTab(id) {
-  const tab = tabs.find(t=>t.id===id);
-  if (tab?.dirty && !confirm(`"${tab.name}" non sauvegardé. Fermer ?`)) return;
-  if (tab?.model) tab.model.dispose();
-  tabs = tabs.filter(t=>t.id!==id);
-  if (activeTab===id) { const l=tabs[tabs.length-1]; l ? activateTab(l.id) : showWelcome(); }
+function closeTab(id){
+  const tab=tabs.find(t=>t.id===id);
+  if(tab?.dirty&&!confirm(`"${tab.name}" non sauvegardé. Fermer ?`))return;
+  if(tab?.model)tab.model.dispose();
+  tabs=tabs.filter(t=>t.id!==id);
+  if(activeTab===id){const l=tabs[tabs.length-1];l?activateTab(l.id):showWelcome()}
   else renderTabs();
 }
 
-function updateSB(tab) {
-  $('sbLines').textContent = (tab.content.split('\n').length) + ' lignes';
-  const b = new TextEncoder().encode(tab.content).length;
-  $('sbSize').textContent = fmtSize(b) || '0B';
+function updateSB(tab){
+  $('sbLines').textContent=tab.content.split('\n').length+' lignes';
+  const b=new TextEncoder().encode(tab.content).length;
+  $('sbSize').textContent=fmtSize(b)||'0B';
 }
 
 // ══ SAVE ══
-async function saveActive() {
-  const tab = tabs.find(t=>t.id===activeTab); if (!tab) return;
-  if (tab.model) tab.content = tab.model.getValue();
-  try {
-    const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(tab.content)));
-    await api('put', {path:tab.path, content:b64});
-    tab.dirty = false;
-    renderTabs();
-    toast('Sauvegardé ✓', 'ok');
-  } catch(e) { toast(e.message, 'err'); }
+async function saveActive(){
+  const tab=tabs.find(t=>t.id===activeTab);if(!tab)return;
+  if(tab.model)tab.content=tab.model.getValue();
+  try{
+    const b64=btoa(String.fromCharCode(...new TextEncoder().encode(tab.content)));
+    await api('put',{path:tab.path,content:b64});
+    tab.dirty=false;renderTabs();toast('Sauvegardé ✓','ok');
+  }catch(e){toast(e.message,'err')}
 }
 
-$('btnSave').addEventListener('click', saveActive);
+// ══ MONACO INIT ══
+require.config({paths:{vs:'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs'}});
 
-$('btnFormat').addEventListener('click', () => {
-  if (monacoEditor) monacoEditor.getAction('editor.action.formatDocument').run();
-});
-
-$('btnDownload').addEventListener('click', () => {
-  const tab = tabs.find(t=>t.id===activeTab); if (!tab) return;
-  const content = tab.model ? tab.model.getValue() : tab.content;
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([content], {type:'text/plain'}));
-  a.download = tab.name; a.click();
-});
-
-$('btnSaveAs').addEventListener('click', () => {
-  const tab = tabs.find(t=>t.id===activeTab); if (!tab) return;
-  openModal('Enregistrer sous', tab.path, async val => {
-    try {
-      const content = tab.model ? tab.model.getValue() : tab.content;
-      const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(content)));
-      await api('put', {path:val, content:b64});
-      tab.path=val; tab.name=val.split('/').pop(); tab.dirty=false;
-      renderTabs(); activateTab(tab.id);
-      toast('Sauvegardé sous ' + tab.name, 'ok');
-    } catch(e) { toast(e.message,'err'); }
+require(['vs/editor/editor.main'],function(){
+  monaco.editor.defineTheme('ftpstudio',{
+    base:'vs-dark',inherit:true,
+    rules:[
+      {token:'comment',foreground:'3a4d6a',fontStyle:'italic'},
+      {token:'keyword',foreground:'38bdf8'},
+      {token:'string', foreground:'34d399'},
+      {token:'number', foreground:'fb923c'},
+      {token:'type',   foreground:'2dd4bf'},
+      {token:'function',foreground:'fbbf24'},
+      {token:'variable',foreground:'c8d3e8'},
+      {token:'operator',foreground:'7dd3fc'},
+      {token:'delimiter',foreground:'8892b0'},
+      {token:'tag',    foreground:'f87171'},
+      {token:'attribute.name', foreground:'fbbf24'},
+      {token:'attribute.value',foreground:'34d399'},
+      {token:'metatag',foreground:'38bdf8'},
+      {token:'regexp', foreground:'fb923c'},
+      {token:'constant',foreground:'f87171'},
+    ],
+    colors:{
+      'editor.background':'#0d1017',
+      'editor.foreground':'#c8d3e8',
+      'editorLineNumber.foreground':'#222a40',
+      'editorLineNumber.activeForeground':'#48587a',
+      'editor.lineHighlightBackground':'#121620',
+      'editor.selectionBackground':'#38bdf828',
+      'editorCursor.foreground':'#38bdf8',
+      'editorWidget.background':'#181c28',
+      'editorWidget.border':'#263050',
+      'input.background':'#0d1017',
+      'input.border':'#263050',
+      'input.foreground':'#c8d3e8',
+      'focusBorder':'#38bdf8',
+      'editor.findMatchBackground':'#fbbf2440',
+      'editor.findMatchHighlightBackground':'#fbbf2420',
+      'scrollbarSlider.background':'#26305060',
+      'scrollbarSlider.hoverBackground':'#263050aa',
+      'minimap.background':'#0d1017',
+      'editorGutter.background':'#121620',
+      'editorBracketHighlight.foreground1':'#38bdf8',
+      'editorBracketHighlight.foreground2':'#34d399',
+      'editorBracketHighlight.foreground3':'#fbbf24',
+    }
   });
+
+  monacoEditor=monaco.editor.create($('monaco-editor'),{
+    theme:'ftpstudio',
+    language:'plaintext',
+    fontSize:13,
+    fontFamily:"'JetBrains Mono', monospace",
+    fontLigatures:true,
+    lineHeight:22,
+    minimap:{enabled:true,scale:1},
+    scrollBeyondLastLine:false,
+    wordWrap:'off',
+    automaticLayout:true,
+    tabSize:2,insertSpaces:true,detectIndentation:true,
+    renderWhitespace:'selection',
+    bracketPairColorization:{enabled:true},
+    guides:{bracketPairs:true,indentation:true},
+    quickSuggestions:{other:true,comments:false,strings:true},
+    suggestOnTriggerCharacters:true,
+    folding:true,
+    lineNumbers:'on',
+    glyphMargin:false,
+    renderLineHighlight:'line',
+    smoothScrolling:true,
+    cursorBlinking:'smooth',
+    cursorSmoothCaretAnimation:'on',
+    padding:{top:10,bottom:10},
+    // Emmet built-in
+    emmet:{enabled:true},
+  });
+
+  // Ctrl+S
+  monacoEditor.addCommand(monaco.KeyMod.CtrlCmd|monaco.KeyCode.KeyS,saveActive);
+  // Ctrl+W → close tab
+  monacoEditor.addCommand(monaco.KeyMod.CtrlCmd|monaco.KeyCode.KeyW,()=>{if(activeTab)closeTab(activeTab)});
+
+  // ── EMMET-LIKE EXPANSION sur Enter ──
+  // Pour HTML: si la ligne contient un tag simple (ex: "h1", "div.foo", "p"),
+  // Tab l'expand déjà via Emmet natif de Monaco.
+  // On ajoute AUSSI l'expansion sur Enter pour les raccourcis simples.
+  monacoEditor.onKeyDown(e => {
+    if (e.keyCode !== monaco.KeyCode.Enter) return;
+    const model = monacoEditor.getModel();
+    if (!model) return;
+    const lang = model.getLanguageId();
+    if (!['html','php','markdown'].includes(lang)) return;
+
+    const pos = monacoEditor.getPosition();
+    const line = model.getLineContent(pos.lineNumber).trimEnd();
+    const trimmed = line.trim();
+
+    // Simple tag expansion: "h1" → "<h1>|</h1>"
+    const expanded = expandEmmet(trimmed);
+    if (!expanded) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const indent = line.match(/^(\s*)/)[1];
+    const col = monacoEditor.getPosition().column;
+    const lineLen = model.getLineLength(pos.lineNumber);
+
+    monacoEditor.executeEdits('emmet-enter',[{
+      range: new monaco.Range(pos.lineNumber, 1, pos.lineNumber, lineLen+1),
+      text: indent + expanded.open + expanded.close,
+    }]);
+
+    // Place cursor between open and close tags
+    const newCol = indent.length + expanded.open.length + 1;
+    monacoEditor.setPosition({lineNumber:pos.lineNumber, column:newCol});
+    monacoEditor.focus();
+  });
+
+  // Cursor pos → statusbar
+  monacoEditor.onDidChangeCursorPosition(e=>{
+    $('sbCursor').textContent=`Ln ${e.position.lineNumber}, Col ${e.position.column}`;
+  });
+
+  // Content change → dirty
+  monacoEditor.onDidChangeModelContent(()=>{
+    const tab=tabs.find(t=>t.id===activeTab);if(!tab)return;
+    tab.content=monacoEditor.getValue();tab.dirty=true;renderTabs();updateSB(tab);
+  });
+
+  monacoReady=true;
+  if(pendingAct!==null){activateTab(pendingAct);pendingAct=null}
 });
 
-// ══ NAV ══
-$('btnUp').addEventListener('click', () => {
-  const p = currentPath.replace(/\/$/,'').split('/'); p.pop(); loadDir(p.join('/')||'/');
-});
-$('btnRefresh').addEventListener('click', () => loadDir(currentPath));
-$('btnNewFile').addEventListener('click', () => {
-  openModal('Nouveau fichier','index.html', async name => {
+// ══ EMMET EXPANSION ══
+// Supporte: tag, tag.class, tag#id, tag.class#id, tag[attr], tag*n
+function expandEmmet(abbr) {
+  if (!abbr || abbr.includes(' ') || abbr.startsWith('<')) return null;
+
+  // HTML void elements (self-closing)
+  const voids = ['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'];
+
+  // Parse: tagname + optional .class + optional #id + optional [attrs]
+  const m = abbr.match(/^([a-z][a-z0-9]*)([.#\[][^>]*)?$/i);
+  if (!m) return null;
+
+  let tag = m[1].toLowerCase();
+  const rest = m[2] || '';
+
+  // Build attributes from .class #id [attr=val]
+  let classes = [], id = '', attrs = '';
+  let tmp = rest;
+
+  // Extract [attrs]
+  const attrMatch = tmp.match(/\[([^\]]*)\]/);
+  if (attrMatch) { attrs += ' ' + attrMatch[1]; tmp = tmp.replace(attrMatch[0],''); }
+
+  // Extract #id and .classes
+  const parts = tmp.split(/(?=[.#])/);
+  for (const p of parts) {
+    if (p.startsWith('#')) id = p.slice(1);
+    else if (p.startsWith('.')) classes.push(p.slice(1));
+  }
+
+  let attrStr = '';
+  if (id) attrStr += ` id="${id}"`;
+  if (classes.length) attrStr += ` class="${classes.join(' ')}"`;
+  if (attrs) attrStr += attrs;
+
+  // Special expansions
+  const specials = {
+    '!': {open:'<!DOCTYPE html>\n<html lang="fr">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>Document</title>\n</head>\n<body>\n  ', close:'\n</body>\n</html>'},
+    'html:5': {open:'<!DOCTYPE html>\n<html lang="fr">\n<head>\n  <meta charset="UTF-8">\n  <title>Document</title>\n</head>\n<body>\n  ', close:'\n</body>\n</html>'},
+  };
+  if (specials[abbr]) return specials[abbr];
+
+  if (voids.includes(tag)) {
+    return {open:`<${tag}${attrStr}>`, close:''};
+  }
+
+  // Inline tags: cursor goes between on same line
+  const inlines = ['a','b','i','u','em','strong','span','label','button','code','small','mark','cite','abbr','time','h1','h2','h3','h4','h5','h6','li','dt','dd','th','td','caption','figcaption','legend','title'];
+
+  if (inlines.includes(tag)) {
+    return {open:`<${tag}${attrStr}>`, close:`</${tag}>`};
+  }
+
+  // Block tags: expand to multiline
+  return {open:`<${tag}${attrStr}>\n  `, close:`\n</${tag}>`};
+}
+
+// ══ MENU ACTIONS ══
+$('dd-new').addEventListener('click',()=>{
+  closeMenus();
+  openModal('Nouveau fichier','index.html',async name=>{
     const path=(currentPath==='/'?'':currentPath)+'/'+name;
-    try { await api('put',{path,content:btoa('')}); await loadDir(currentPath); openFile(path,name); toast('Créé','ok'); }
-    catch(e) { toast(e.message,'err'); }
+    try{await api('put',{path,content:btoa('')});await loadDir(currentPath);openFile(path,name);toast('Créé','ok')}
+    catch(e){toast(e.message,'err')}
   });
 });
-$('btnNewDir').addEventListener('click', () => {
-  openModal('Nouveau dossier','dossier', async name => {
+$('dd-newdir').addEventListener('click',()=>{
+  closeMenus();
+  openModal('Nouveau dossier','dossier',async name=>{
     const path=(currentPath==='/'?'':currentPath)+'/'+name;
-    try { await api('mkdir',{path}); await loadDir(currentPath); toast('Dossier créé','ok'); }
-    catch(e) { toast(e.message,'err'); }
+    try{await api('mkdir',{path});await loadDir(currentPath);toast('Dossier créé','ok')}
+    catch(e){toast(e.message,'err')}
   });
+});
+$('dd-save').addEventListener('click',()=>{closeMenus();saveActive()});
+$('dd-saveas').addEventListener('click',()=>{
+  closeMenus();
+  const tab=tabs.find(t=>t.id===activeTab);if(!tab)return;
+  openModal('Enregistrer sous',tab.path,async val=>{
+    try{
+      if(tab.model)tab.content=tab.model.getValue();
+      const b64=btoa(String.fromCharCode(...new TextEncoder().encode(tab.content)));
+      await api('put',{path:val,content:b64});
+      tab.path=val;tab.name=val.split('/').pop();tab.dirty=false;
+      renderTabs();activateTab(tab.id);toast('Sauvegardé sous '+tab.name,'ok');
+    }catch(e){toast(e.message,'err')}
+  });
+});
+$('dd-dl').addEventListener('click',()=>{
+  closeMenus();
+  const tab=tabs.find(t=>t.id===activeTab);if(!tab)return;
+  const content=tab.model?tab.model.getValue():tab.content;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:'text/plain'}));
+  a.download=tab.name;a.click();
+});
+$('dd-close').addEventListener('click',()=>{closeMenus();if(activeTab)closeTab(activeTab)});
+$('dd-upload').addEventListener('click',()=>{closeMenus();$('fileInput').click()});
+$('dd-find').addEventListener('click',()=>{closeMenus();if(monacoEditor)monacoEditor.getAction('actions.find').run()});
+$('dd-replace').addEventListener('click',()=>{closeMenus();if(monacoEditor)monacoEditor.getAction('editor.action.startFindReplaceAction').run()});
+$('dd-format').addEventListener('click',()=>{closeMenus();if(monacoEditor)monacoEditor.getAction('editor.action.formatDocument').run()});
+$('dd-fold').addEventListener('click',()=>{closeMenus();if(monacoEditor)monacoEditor.getAction('editor.foldAll').run()});
+$('dd-up').addEventListener('click',()=>{
+  closeMenus();
+  const p=currentPath.replace(/\/$/,'').split('/');p.pop();loadDir(p.join('/')||'/');
+});
+$('dd-refresh').addEventListener('click',()=>{closeMenus();loadDir(currentPath)});
+$('dd-goto').addEventListener('click',()=>{closeMenus();if(monacoEditor)monacoEditor.getAction('editor.action.gotoLine').run()});
+
+$('btnUp').addEventListener('click',()=>{const p=currentPath.replace(/\/$/,'').split('/');p.pop();loadDir(p.join('/')||'/')});
+$('btnRefresh').addEventListener('click',()=>loadDir(currentPath));
+
+// ══ KEYBOARD SHORTCUTS ══
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='n'){e.preventDefault();$('dd-new').click()}
+  if((e.ctrlKey||e.metaKey)&&e.key==='w'){e.preventDefault();if(activeTab)closeTab(activeTab)}
 });
 
 // ══ UPLOAD ══
-$('btnUpload').addEventListener('click', () => $('fileInput').click());
-$('fileInput').addEventListener('change', async e => {
-  for (const f of e.target.files) await uploadFile(f);
-  e.target.value=''; await loadDir(currentPath);
+$('fileInput').addEventListener('change',async e=>{
+  for(const f of e.target.files)await uploadFile(f);
+  e.target.value='';await loadDir(currentPath);
 });
-async function uploadFile(file) {
-  return new Promise((res,rej) => {
-    const r = new FileReader();
-    r.onload = async () => {
-      const b64 = r.result.split(',')[1];
-      const path = (currentPath==='/'?'':currentPath)+'/'+file.name;
-      try { await api('put',{path,content:b64}); toast(file.name+' uploadé','ok'); res(); }
-      catch(e) { toast(e.message,'err'); rej(e); }
+async function uploadFile(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=async()=>{
+      const b64=r.result.split(',')[1];
+      const path=(currentPath==='/'?'':currentPath)+'/'+file.name;
+      try{await api('put',{path,content:b64});toast(file.name+' uploadé','ok');res()}
+      catch(e){toast(e.message,'err');rej(e)}
     };
     r.readAsDataURL(file);
   });
 }
-
-const ea=$('editor-area'), dz=$('dropZone');
-ea.addEventListener('dragover', e=>{ e.preventDefault(); if(connected) dz.classList.add('show'); });
-ea.addEventListener('dragleave', ()=>dz.classList.remove('show'));
-ea.addEventListener('drop', async e=>{
-  e.preventDefault(); dz.classList.remove('show'); if(!connected) return;
-  for(const f of e.dataTransfer.files) await uploadFile(f);
+const ea=$('editor-area'),dz=$('dropZone');
+ea.addEventListener('dragover',e=>{e.preventDefault();if(connected)dz.classList.add('show')});
+ea.addEventListener('dragleave',()=>dz.classList.remove('show'));
+ea.addEventListener('drop',async e=>{
+  e.preventDefault();dz.classList.remove('show');if(!connected)return;
+  for(const f of e.dataTransfer.files)await uploadFile(f);
   await loadDir(currentPath);
 });
 
 // ══ CONTEXT MENU ══
-function showCtx(x,y,type) {
-  const m=$('ctxMenu'); m.style.display='block';
+function showCtx(x,y,type){
+  const m=$('ctxMenu');m.style.display='block';
   m.style.left=(x+170>innerWidth?innerWidth-178:x)+'px';
   m.style.top=(y+160>innerHeight?innerHeight-168:y)+'px';
   $('ctx-open').style.display=type==='file'?'':'none';
   $('ctx-download').style.display=type==='file'?'':'none';
 }
-document.addEventListener('click', ()=>$('ctxMenu').style.display='none');
-$('ctx-open').addEventListener('click', ()=>{ if(ctxTarget?.type==='file') openFile(ctxTarget.path,ctxTarget.name); });
-$('ctx-rename').addEventListener('click', ()=>{
-  if(!ctxTarget) return;
-  openModal('Renommer',ctxTarget.name, async nn=>{
+document.addEventListener('click',()=>$('ctxMenu').style.display='none');
+$('ctx-open').addEventListener('click',()=>{if(ctxTarget?.type==='file')openFile(ctxTarget.path,ctxTarget.name)});
+$('ctx-rename').addEventListener('click',()=>{
+  if(!ctxTarget)return;
+  openModal('Renommer',ctxTarget.name,async nn=>{
     const p=ctxTarget.path.substring(0,ctxTarget.path.lastIndexOf('/'))||'/';
-    try { await api('rename',{from:ctxTarget.path,to:(p==='/'?'':p)+'/'+nn}); await loadDir(currentPath); toast('Renommé','ok'); }
-    catch(e) { toast(e.message,'err'); }
+    try{await api('rename',{from:ctxTarget.path,to:(p==='/'?'':p)+'/'+nn});await loadDir(currentPath);toast('Renommé','ok')}
+    catch(e){toast(e.message,'err')}
   });
 });
-$('ctx-download').addEventListener('click', async()=>{
-  if(!ctxTarget||ctxTarget.type!=='file') return;
-  try {
+$('ctx-download').addEventListener('click',async()=>{
+  if(!ctxTarget||ctxTarget.type!=='file')return;
+  try{
     const d=await api('get',{path:ctxTarget.path});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([Uint8Array.from(atob(d.content),c=>c.charCodeAt(0))]));
-    a.download=ctxTarget.name; a.click(); toast('Téléchargé','ok');
-  } catch(e) { toast(e.message,'err'); }
+    a.download=ctxTarget.name;a.click();toast('Téléchargé','ok');
+  }catch(e){toast(e.message,'err')}
 });
-$('ctx-delete').addEventListener('click', async()=>{
-  if(!ctxTarget||!confirm(`Supprimer "${ctxTarget.name}" ?`)) return;
-  try {
+$('ctx-delete').addEventListener('click',async()=>{
+  if(!ctxTarget||!confirm(`Supprimer "${ctxTarget.name}" ?`))return;
+  try{
     await api('delete',{path:ctxTarget.path,type:ctxTarget.type});
-    const tab=tabs.find(t=>t.path===ctxTarget.path); if(tab) closeTab(tab.id);
-    await loadDir(currentPath); toast('Supprimé','ok');
-  } catch(e) { toast(e.message,'err'); }
+    const tab=tabs.find(t=>t.path===ctxTarget.path);if(tab)closeTab(tab.id);
+    await loadDir(currentPath);toast('Supprimé','ok');
+  }catch(e){toast(e.message,'err')}
 });
 
 // ══ MODAL ══
 let modalCb=null;
 function openModal(title,def,cb){
-  modalCb=cb; $('modal-title').textContent=title; $('modal-input').value=def;
+  modalCb=cb;$('modal-title').textContent=title;$('modal-input').value=def;
   $('modal-overlay').classList.add('show');
-  setTimeout(()=>{ const i=$('modal-input'); i.focus(); i.select(); },60);
+  setTimeout(()=>{const i=$('modal-input');i.focus();i.select()},60);
 }
 $('modal-ok').addEventListener('click',()=>{
-  const v=$('modal-input').value.trim(); if(!v) return;
-  $('modal-overlay').classList.remove('show'); if(modalCb) modalCb(v);
+  const v=$('modal-input').value.trim();if(!v)return;
+  $('modal-overlay').classList.remove('show');if(modalCb)modalCb(v);
 });
 $('modal-cancel').addEventListener('click',()=>$('modal-overlay').classList.remove('show'));
 $('modal-input').addEventListener('keydown',e=>{
-  if(e.key==='Enter') $('modal-ok').click();
-  if(e.key==='Escape') $('modal-cancel').click();
+  if(e.key==='Enter')$('modal-ok').click();
+  if(e.key==='Escape')$('modal-cancel').click();
 });
 </script>
 </body>
