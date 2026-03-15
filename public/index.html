@@ -6,23 +6,6 @@
 <title>FTP Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
-
-<!-- CodeMirror 5 -->
-<link  rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
-<link  rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/shell/shell.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
-
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -52,204 +35,185 @@ body { font-family: var(--ui); background: var(--bg); color: var(--text); displa
 /* ── TOPBAR ── */
 #topbar {
   display: flex; align-items: center; gap: 8px;
-  padding: 0 16px; height: 52px;
+  padding: 0 14px; height: 50px;
   background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  overflow: hidden;
 }
-.logo { font-size: 17px; font-weight: 800; letter-spacing: .06em; white-space: nowrap; margin-right: 6px; color: var(--accent); }
+.logo { font-size: 16px; font-weight: 800; letter-spacing: .06em; white-space: nowrap; margin-right: 6px; color: var(--accent); }
 .logo span { color: var(--teal); }
 .f { display: flex; align-items: center; gap: 5px; }
 
 input.tb {
   background: var(--bg3); border: 1px solid var(--border2);
-  color: var(--text); font-family: var(--mono); font-size: 11.5px;
-  padding: 0 9px; border-radius: 6px; outline: none; height: 30px;
+  color: var(--text); font-family: var(--mono); font-size: 11px;
+  padding: 0 8px; border-radius: 5px; outline: none; height: 28px;
   transition: border-color .15s, box-shadow .15s;
 }
 input.tb:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(56,189,248,.1); }
 input.tb::placeholder { color: var(--text3); }
-#iHost{width:148px} #iUser{width:96px} #iPass{width:96px} #iPort{width:48px}
-#iProxy{width:220px} #iToken{width:120px}
+#iHost{width:140px} #iUser{width:88px} #iPass{width:88px} #iPort{width:44px}
+#iProxy{width:210px} #iToken{width:110px}
 
-.vsep { width: 1px; height: 22px; background: var(--border2); flex-shrink: 0; margin: 0 2px; }
+.vsep { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; margin: 0 2px; }
 
 #btnConnect {
-  background: var(--accent); color: #0e1117; border: none; border-radius: 6px;
-  font-family: var(--ui); font-size: 12px; font-weight: 700;
-  padding: 0 14px; height: 30px; cursor: pointer; white-space: nowrap;
-  transition: opacity .15s, transform .1s;
+  background: var(--accent); color: #0e1117; border: none; border-radius: 5px;
+  font-family: var(--ui); font-size: 11.5px; font-weight: 700;
+  padding: 0 14px; height: 28px; cursor: pointer; white-space: nowrap;
+  transition: opacity .15s, transform .1s; flex-shrink: 0;
 }
 #btnConnect:hover { opacity: .85; }
 #btnConnect:active { transform: scale(.97); }
 #btnConnect.disc { background: var(--red); color: #fff; }
 
-#dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); flex-shrink: 0; transition: background .3s, box-shadow .3s; }
-#dot.on  { background: var(--green); box-shadow: 0 0 8px var(--green); }
-#dot.err { background: var(--red);   box-shadow: 0 0 8px var(--red); }
-#statusMsg { font-size: 11px; font-family: var(--mono); color: var(--text2); max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); flex-shrink: 0; transition: background .3s, box-shadow .3s; }
+#dot.on  { background: var(--green); box-shadow: 0 0 7px var(--green); }
+#dot.err { background: var(--red); box-shadow: 0 0 7px var(--red); }
+#statusMsg { font-size: 11px; font-family: var(--mono); color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
 /* ── LAYOUT ── */
 #body { display: flex; flex: 1; overflow: hidden; }
 
 /* ── SIDEBAR ── */
-#sidebar { width: 236px; min-width: 160px; display: flex; flex-direction: column; background: var(--bg2); border-right: 1px solid var(--border); flex-shrink: 0; overflow: hidden; }
+#sidebar {
+  width: 230px; min-width: 150px; display: flex; flex-direction: column;
+  background: var(--bg2); border-right: 1px solid var(--border); flex-shrink: 0; overflow: hidden;
+}
 
-#sideHead { display: flex; align-items: center; gap: 2px; padding: 5px 7px; border-bottom: 1px solid var(--border); flex-shrink: 0; min-height: 38px; background: var(--bg3); }
+#sideHead {
+  display: flex; align-items: center; gap: 2px; padding: 5px 6px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; min-height: 36px; background: var(--bg3);
+}
 #pathDisplay { font-size: 10px; font-family: var(--mono); color: var(--accent); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
-.ib { background: none; border: none; color: var(--text2); cursor: pointer; padding: 3px 5px; border-radius: 4px; font-size: 13px; line-height: 1; transition: color .1s, background .1s; flex-shrink: 0; height: 24px; display: flex; align-items: center; }
+.ib { background: none; border: none; color: var(--text2); cursor: pointer; padding: 2px 5px; border-radius: 4px; font-size: 13px; line-height: 1; transition: color .1s, background .1s; flex-shrink: 0; height: 22px; display: flex; align-items: center; }
 .ib:hover { color: var(--text); background: var(--bg4); }
 .ib:disabled { opacity: .2; cursor: default; pointer-events: none; }
 
-#tree { flex: 1; overflow-y: auto; padding: 4px 0; }
+#tree { flex: 1; overflow-y: auto; padding: 3px 0; }
 #tree::-webkit-scrollbar { width: 3px; }
 #tree::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-.ti { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 12px; font-size: 12px; font-family: var(--mono); cursor: pointer; border-radius: 5px; margin: 1px 5px; transition: background .1s; color: var(--text); min-width: 0; }
+.ti { display: flex; align-items: center; gap: 5px; padding: 3.5px 8px 3.5px 10px; font-size: 12px; font-family: var(--mono); cursor: pointer; border-radius: 4px; margin: 1px 4px; transition: background .1s; color: var(--text); min-width: 0; }
 .ti:hover { background: var(--bg3); }
 .ti.active { background: rgba(56,189,248,.1); color: var(--accent); }
 .ti .ico { width: 14px; text-align: center; flex-shrink: 0; font-size: 11px; }
 .ti .nm  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .ti .sz  { font-size: 9px; color: var(--text3); flex-shrink: 0; }
+
 .ext-html .ico{color:#e34c26} .ext-css .ico{color:#2965f1} .ext-js .ico{color:var(--yellow)}
 .ext-ts .ico{color:#60a5fa}   .ext-php .ico{color:#22d3ee} .ext-py .ico{color:#60a5fa}
 .ext-json .ico{color:var(--green)} .ext-md .ico{color:var(--teal)} .ext-txt .ico{color:var(--text2)}
 .ext-svg .ico{color:var(--orange)} .ext-img .ico{color:var(--orange)}
 
-/* ── CONTEXT MENU ── */
-#ctxMenu { position: fixed; background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 5px; z-index: 1000; min-width: 160px; box-shadow: 0 12px 40px rgba(0,0,0,.6); display: none; animation: pop .1s ease; }
+/* ── CTX MENU ── */
+#ctxMenu { position: fixed; background: var(--bg3); border: 1px solid var(--border2); border-radius: 7px; padding: 4px; z-index: 2000; min-width: 160px; box-shadow: 0 12px 40px rgba(0,0,0,.6); display: none; animation: pop .1s ease; }
 @keyframes pop { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
-#ctxMenu button { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; color: var(--text); font-family: var(--mono); font-size: 12px; padding: 7px 10px; cursor: pointer; border-radius: 5px; transition: background .1s; }
+#ctxMenu button { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: none; color: var(--text); font-family: var(--mono); font-size: 12px; padding: 6px 10px; cursor: pointer; border-radius: 4px; transition: background .1s; }
 #ctxMenu button:hover { background: var(--bg4); }
 #ctxMenu button.danger { color: var(--red); }
-#ctxMenu hr { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+#ctxMenu hr { border: none; border-top: 1px solid var(--border); margin: 3px 0; }
 
 /* ── EDITOR AREA ── */
-#editor-area { display: flex; flex-direction: column; flex: 1; overflow: hidden; background: var(--bg); }
+#editor-area { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; }
 
 /* TABS */
-#tabs { display: flex; align-items: flex-end; background: var(--bg2); border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; height: 40px; gap: 2px; padding: 0 8px; }
-#tabs::-webkit-scrollbar { height: 2px; }
-#tabs::-webkit-scrollbar-thumb { background: var(--border2); }
+#tabs-bar {
+  display: flex; align-items: flex-end;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  overflow-x: auto; flex-shrink: 0; height: 38px; padding: 0 6px; gap: 2px;
+}
+#tabs-bar::-webkit-scrollbar { height: 2px; }
+#tabs-bar::-webkit-scrollbar-thumb { background: var(--border2); }
 
-.tab { display: flex; align-items: center; gap: 6px; padding: 0 12px; height: 34px; font-size: 11.5px; font-family: var(--mono); cursor: pointer; white-space: nowrap; color: var(--text2); transition: color .1s, background .1s; flex-shrink: 0; border-radius: 6px 6px 0 0; background: var(--bg3); border: 1px solid transparent; border-bottom: none; margin-bottom: -1px; position: relative; }
+.tab {
+  display: flex; align-items: center; gap: 6px; padding: 0 12px;
+  height: 32px; font-size: 11.5px; font-family: var(--mono);
+  cursor: pointer; white-space: nowrap; color: var(--text2);
+  transition: color .1s, background .1s; flex-shrink: 0;
+  border-radius: 5px 5px 0 0; background: var(--bg3);
+  border: 1px solid transparent; border-bottom: none;
+  margin-bottom: -1px; position: relative;
+}
 .tab:hover { color: var(--text); background: var(--bg4); }
 .tab.active { color: var(--text); background: var(--bg); border-color: var(--border); border-bottom-color: var(--bg); }
 .tab.active::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:2px; background:var(--accent); border-radius:2px 2px 0 0; }
 .tab.dirty .tname::after { content:' ●'; font-size:7px; color:var(--yellow); vertical-align:middle; }
-.tc { background:none; border:none; color:var(--text3); cursor:pointer; font-size:14px; line-height:1; padding:0; width:14px; text-align:center; transition:color .1s; }
-.tc:hover { color: var(--red); }
+.tc { background:none; border:none; color:var(--text3); cursor:pointer; font-size:13px; line-height:1; padding:0; width:14px; text-align:center; border-radius:3px; transition:color .1s, background .1s; }
+.tc:hover { color: var(--red); background: rgba(248,113,113,.1); }
 
-/* EDIT BAR */
-#editBar { display: none; align-items: center; gap: 6px; padding: 6px 12px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.eb { background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); font-family: var(--ui); font-size: 11.5px; font-weight: 600; padding: 0 12px; height: 28px; border-radius: 5px; cursor: pointer; transition: all .1s; display: flex; align-items: center; gap: 5px; }
+/* EDIT TOOLBAR */
+#editBar {
+  display: none; align-items: center; gap: 5px;
+  padding: 5px 10px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.eb { background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); font-family: var(--ui); font-size: 11px; font-weight: 600; padding: 0 10px; height: 26px; border-radius: 4px; cursor: pointer; transition: all .1s; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
 .eb:hover { color: var(--text); border-color: var(--text3); background: var(--bg4); }
 .eb.save { background: var(--accent); color: #0e1117; border-color: var(--accent); font-weight: 700; }
 .eb.save:hover { opacity: .85; }
+.eb kbd { background: rgba(0,0,0,.2); border-radius: 3px; padding: 1px 4px; font-family: var(--mono); font-size: 9px; }
 #editInfo { margin-left: auto; font-size: 10px; font-family: var(--mono); color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-kbd { background: rgba(255,255,255,.07); border-radius: 3px; padding: 1px 4px; font-family: var(--mono); font-size: 9px; margin-left: 2px; }
 
-/* ── CODEMIRROR ── */
-#cm-wrap { flex: 1; overflow: hidden; display: none; position: relative; }
-#cm-wrap.visible { display: block; }
+/* MONACO */
+#monaco-wrap { flex: 1; overflow: hidden; display: none; }
+#monaco-wrap.visible { display: block; }
+#monaco-editor { width: 100%; height: 100%; }
 
-.CodeMirror {
-  height: 100% !important;
-  font-family: var(--mono) !important;
-  font-size: 13px !important;
-  line-height: 1.7 !important;
-  background: var(--bg) !important;
-}
-.CodeMirror-scroll { padding-bottom: 30px; }
-.CodeMirror-gutters { background: var(--bg2) !important; border-right: 1px solid var(--border) !important; }
-.CodeMirror-linenumber { color: var(--text3) !important; padding: 0 10px 0 6px; }
-.CodeMirror-activeline-background { background: rgba(56,189,248,.04) !important; }
-.CodeMirror-cursor { border-left: 2px solid var(--accent) !important; }
-.CodeMirror-selected { background: rgba(56,189,248,.18) !important; }
-.CodeMirror-focused .CodeMirror-selected { background: rgba(56,189,248,.2) !important; }
-.CodeMirror-matchingbracket { color: var(--accent) !important; font-weight: bold; outline: 1px solid var(--accent); }
+/* WELCOME */
+#welcome { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; background: var(--bg); }
+.w-title { font-size: 24px; font-weight: 800; color: var(--text3); letter-spacing: .05em; }
+.w-sub   { font-size: 12px; font-family: var(--mono); color: var(--text3); }
+.w-feats { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+.w-feat  { display: flex; align-items: center; gap: 10px; font-size: 12px; font-family: var(--mono); color: var(--text2); }
+.w-feat span:first-child { color: var(--accent); width: 16px; text-align: center; }
 
-/* Material darker theme tweaks — no purple */
-.cm-s-material-darker .cm-keyword   { color: #38bdf8 !important; }
-.cm-s-material-darker .cm-atom      { color: #f87171 !important; }
-.cm-s-material-darker .cm-number    { color: #fb923c !important; }
-.cm-s-material-darker .cm-def       { color: #fbbf24 !important; }
-.cm-s-material-darker .cm-variable  { color: #cbd5e1 !important; }
-.cm-s-material-darker .cm-variable-2{ color: #e2e8f0 !important; }
-.cm-s-material-darker .cm-variable-3,.cm-s-material-darker .cm-type { color: #34d399 !important; }
-.cm-s-material-darker .cm-property  { color: #94a3b8 !important; }
-.cm-s-material-darker .cm-operator  { color: #7dd3fc !important; }
-.cm-s-material-darker .cm-comment   { color: #3d4f6e !important; font-style: italic; }
-.cm-s-material-darker .cm-string    { color: #34d399 !important; }
-.cm-s-material-darker .cm-string-2  { color: #2dd4bf !important; }
-.cm-s-material-darker .cm-meta      { color: #94a3b8 !important; }
-.cm-s-material-darker .cm-qualifier { color: #38bdf8 !important; }
-.cm-s-material-darker .cm-builtin   { color: #fbbf24 !important; }
-.cm-s-material-darker .cm-bracket   { color: #94a3b8 !important; }
-.cm-s-material-darker .cm-tag       { color: #f87171 !important; }
-.cm-s-material-darker .cm-attribute { color: #fbbf24 !important; }
-.cm-s-material-darker .cm-hr        { color: #3d4f6e !important; }
-.cm-s-material-darker .cm-link      { color: #38bdf8 !important; }
-.cm-s-material-darker .cm-error     { color: #f87171 !important; }
+/* STATUSBAR */
+#statusbar { height: 22px; background: var(--accent); display: flex; align-items: center; padding: 0 12px; gap: 16px; flex-shrink: 0; }
+#statusbar > span { font-size: 10.5px; font-family: var(--mono); color: rgba(14,17,23,.85); }
+#statusbar .hi { color: #0e1117; font-weight: 700; }
+#sbRight { margin-left: auto; display: flex; gap: 16px; }
 
-/* Scrollbar */
-.CodeMirror-vscrollbar::-webkit-scrollbar { width: 6px; }
-.CodeMirror-vscrollbar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-.CodeMirror-hscrollbar::-webkit-scrollbar { height: 6px; }
-.CodeMirror-hscrollbar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-/* ── WELCOME ── */
-#welcome { flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; }
-.w-title { font-size:26px; font-weight:800; color:var(--text3); letter-spacing:.05em; }
-.w-sub   { font-size:12px; font-family:var(--mono); color:var(--text3); }
-.w-grid  { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:14px; }
-.w-chip  { background:var(--bg3); border:1px solid var(--border2); border-radius:7px; padding:7px 12px; font-size:11px; font-family:var(--mono); color:var(--text2); text-align:center; }
-
-/* ── STATUSBAR ── */
-#statusbar { height: 24px; background: var(--bg3); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 14px; gap: 18px; flex-shrink: 0; }
-#statusbar span { font-size: 10.5px; font-family: var(--mono); color: var(--text2); }
-.hi { color: var(--accent) !important; font-weight: 600; }
-.sb-badge { background: var(--bg4); border: 1px solid var(--border2); border-radius: 3px; padding: 0 6px; height: 15px; display: inline-flex; align-items: center; font-size: 10px; color: var(--text2); }
-
-/* ── MODAL ── */
-#modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:500; display:none; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
+/* MODAL */
+#modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:1500; display:none; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
 #modal-overlay.show { display:flex; }
-#modal { background:var(--bg3); border:1px solid var(--border2); border-radius:12px; padding:24px; min-width:320px; max-width:460px; width:90%; box-shadow:0 24px 80px rgba(0,0,0,.6); animation:pop .15s ease; }
-#modal h3 { font-size:15px; font-weight:700; margin-bottom:16px; }
-#modal input { width:100%; background:var(--bg4); border:1px solid var(--border2); color:var(--text); font-family:var(--mono); font-size:13px; padding:9px 12px; border-radius:7px; outline:none; transition:border-color .15s; }
+#modal { background:var(--bg3); border:1px solid var(--border2); border-radius:10px; padding:22px; min-width:300px; max-width:440px; width:90%; box-shadow:0 24px 80px rgba(0,0,0,.6); animation:pop .15s ease; }
+#modal h3 { font-size:14px; font-weight:700; margin-bottom:14px; }
+#modal input { width:100%; background:var(--bg4); border:1px solid var(--border2); color:var(--text); font-family:var(--mono); font-size:13px; padding:8px 11px; border-radius:6px; outline:none; }
 #modal input:focus { border-color:var(--accent); box-shadow:0 0 0 2px rgba(56,189,248,.1); }
-.m-btns { display:flex; gap:8px; margin-top:16px; justify-content:flex-end; }
-.m-btns button { font-family:var(--ui); font-size:12px; font-weight:600; padding:7px 18px; border-radius:6px; cursor:pointer; border:1px solid var(--border2); transition:all .1s; }
+.m-btns { display:flex; gap:8px; margin-top:14px; justify-content:flex-end; }
+.m-btns button { font-family:var(--ui); font-size:12px; font-weight:600; padding:6px 16px; border-radius:5px; cursor:pointer; border:1px solid var(--border2); transition:all .1s; }
 .m-btns .ok { background:var(--accent); color:#0e1117; border-color:var(--accent); }
 .m-btns .ok:hover { opacity:.85; }
 .m-btns .cancel { background:var(--bg4); color:var(--text2); }
 .m-btns .cancel:hover { color:var(--text); }
 
-/* ── TOAST ── */
-#toast { position:fixed; bottom:38px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--bg3); border:1px solid var(--border2); color:var(--text); font-family:var(--mono); font-size:12px; padding:8px 18px; border-radius:8px; z-index:900; opacity:0; transition:opacity .18s, transform .18s; pointer-events:none; box-shadow:0 8px 30px rgba(0,0,0,.5); white-space:nowrap; }
+/* TOAST */
+#toast { position:fixed; bottom:36px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--bg3); border:1px solid var(--border2); color:var(--text); font-family:var(--mono); font-size:12px; padding:7px 16px; border-radius:7px; z-index:1000; opacity:0; transition:opacity .18s, transform .18s; pointer-events:none; box-shadow:0 8px 30px rgba(0,0,0,.5); white-space:nowrap; }
 #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 #toast.ok  { border-color:var(--green); color:var(--green); }
 #toast.err { border-color:var(--red); color:var(--red); }
 
-.spin { display:inline-block; width:12px; height:12px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .6s linear infinite; }
+.spin { display:inline-block; width:11px; height:11px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .6s linear infinite; }
 @keyframes spin { to{transform:rotate(360deg)} }
 
-#dropZone { position:absolute; inset:0; background:rgba(56,189,248,.05); border:2px dashed var(--accent); border-radius:6px; display:none; align-items:center; justify-content:center; font-size:14px; color:var(--accent); font-family:var(--mono); z-index:10; pointer-events:none; }
+#dropZone { position:absolute; inset:0; background:rgba(56,189,248,.05); border:2px dashed var(--accent); display:none; align-items:center; justify-content:center; font-size:14px; color:var(--accent); font-family:var(--mono); z-index:10; pointer-events:none; border-radius:4px; }
 #dropZone.show { display:flex; }
 </style>
 </head>
 <body>
 
+<!-- TOPBAR -->
 <div id="topbar">
   <div class="logo">FTP<span>Studio</span></div>
   <div class="f">
     <input class="tb" id="iProxy" placeholder="https://…/api/ftp">
-    <input class="tb" id="iToken" type="password" placeholder="token secret">
+    <input class="tb" id="iToken" type="password" placeholder="token">
   </div>
   <div class="vsep"></div>
   <div class="f">
-    <input class="tb" id="iHost" placeholder="ftp.monserveur.com">
-    <input class="tb" id="iUser" placeholder="utilisateur">
-    <input class="tb" id="iPass" type="password" placeholder="mot de passe">
+    <input class="tb" id="iHost" placeholder="ftp.serveur.com">
+    <input class="tb" id="iUser" placeholder="user">
+    <input class="tb" id="iPass" type="password" placeholder="pass">
     <input class="tb" id="iPort" value="21">
   </div>
   <button id="btnConnect">Connecter</button>
@@ -258,59 +222,68 @@ kbd { background: rgba(255,255,255,.07); border-radius: 3px; padding: 1px 4px; f
   <div id="statusMsg">Non connecté</div>
 </div>
 
+<!-- BODY -->
 <div id="body">
+  <!-- SIDEBAR -->
   <div id="sidebar">
     <div id="sideHead">
       <div id="pathDisplay">/</div>
-      <button class="ib" id="btnUp"      title="Parent"         disabled>↑</button>
-      <button class="ib" id="btnRefresh" title="Rafraîchir"     disabled>⟳</button>
-      <button class="ib" id="btnNewFile" title="Nouveau fichier" disabled>+</button>
+      <button class="ib" id="btnUp"      title="Parent"          disabled>↑</button>
+      <button class="ib" id="btnRefresh" title="Rafraîchir"      disabled>⟳</button>
+      <button class="ib" id="btnNewFile" title="Nouveau fichier"  disabled>＋</button>
       <button class="ib" id="btnNewDir"  title="Nouveau dossier" disabled>📁</button>
       <button class="ib" id="btnUpload"  title="Upload"          disabled>⬆</button>
       <input type="file" id="fileInput" style="display:none" multiple>
     </div>
     <div id="tree">
-      <div style="padding:20px 14px;color:var(--text3);font-size:11.5px;font-family:var(--mono)">← Connectez-vous</div>
+      <div style="padding:18px 12px;color:var(--text3);font-size:11px;font-family:var(--mono)">← Connectez-vous</div>
     </div>
   </div>
 
+  <!-- EDITOR -->
   <div id="editor-area">
-    <div id="tabs"></div>
+    <div id="tabs-bar"></div>
 
     <div id="welcome">
       <div class="w-title">FTP Studio</div>
-      <div class="w-sub">Connectez-vous puis ouvrez un fichier</div>
-      <div class="w-grid">
-        <div class="w-chip">HTML</div><div class="w-chip">CSS</div>
-        <div class="w-chip">JS / TS</div><div class="w-chip">PHP</div>
-        <div class="w-chip">Python</div><div class="w-chip">JSON</div>
-        <div class="w-chip">Markdown</div><div class="w-chip">Bash</div>
+      <div class="w-sub">Moteur Monaco — identique à VS Code</div>
+      <div class="w-feats">
+        <div class="w-feat"><span>🔍</span><span>Rechercher &amp; Remplacer — <kbd style="background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px">Ctrl+H</kbd></span></div>
+        <div class="w-feat"><span>✦</span><span>Multi-curseurs — <kbd style="background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px">Alt+Clic</kbd></span></div>
+        <div class="w-feat"><span>🗺</span><span>Minimap intégrée</span></div>
+        <div class="w-feat"><span>⚡</span><span>Coloration HTML, CSS, JS, PHP, Python, JSON…</span></div>
+        <div class="w-feat"><span>💾</span><span>Sauvegarde directe — <kbd style="background:var(--bg3);border:1px solid var(--border2);border-radius:3px;padding:1px 5px;font-size:10px">Ctrl+S</kbd></span></div>
       </div>
     </div>
 
     <div id="editBar">
-      <button class="eb save" id="btnSave">💾 Sauvegarder<kbd>Ctrl+S</kbd></button>
+      <button class="eb save" id="btnSave">💾 Sauvegarder <kbd>Ctrl+S</kbd></button>
       <button class="eb" id="btnSaveAs">Enregistrer sous…</button>
       <button class="eb" id="btnDownload">⬇ Télécharger</button>
+      <button class="eb" id="btnFormat" title="Formater le code">⬚ Formater</button>
       <div id="editInfo"></div>
     </div>
 
-    <div id="cm-wrap">
-      <div id="cm-container" style="height:100%;position:relative;">
-        <div id="dropZone">⬆ Déposer pour uploader</div>
-      </div>
+    <div id="monaco-wrap">
+      <div id="monaco-editor"></div>
+      <div id="dropZone">⬆ Déposer pour uploader</div>
     </div>
   </div>
 </div>
 
+<!-- STATUSBAR -->
 <div id="statusbar">
   <span id="sbPath" class="hi">/</span>
-  <span id="sbLang" class="sb-badge">—</span>
-  <span id="sbLines">0 lignes</span>
-  <span id="sbSize">—</span>
-  <span id="sbCursor" style="margin-left:auto">Ln 1, Col 1</span>
+  <span id="sbLang">—</span>
+  <div id="sbRight">
+    <span id="sbLines">0 lignes</span>
+    <span id="sbSize">—</span>
+    <span id="sbCursor">Ln 1, Col 1</span>
+    <span id="sbEncoding">UTF-8</span>
+  </div>
 </div>
 
+<!-- CTX MENU -->
 <div id="ctxMenu">
   <button id="ctx-open">📄 Ouvrir</button>
   <button id="ctx-rename">✏️ Renommer</button>
@@ -319,37 +292,34 @@ kbd { background: rgba(255,255,255,.07); border-radius: 3px; padding: 1px 4px; f
   <button id="ctx-delete" class="danger">🗑 Supprimer</button>
 </div>
 
+<!-- MODAL -->
 <div id="modal-overlay">
   <div id="modal">
     <h3 id="modal-title"></h3>
     <input id="modal-input" type="text">
     <div class="m-btns">
       <button class="cancel" id="modal-cancel">Annuler</button>
-      <button class="ok"     id="modal-ok">OK</button>
+      <button class="ok" id="modal-ok">OK</button>
     </div>
   </div>
 </div>
 
 <div id="toast"></div>
 
+<!-- Monaco loader -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
 <script>
-// ══ HELPERS ══
 const $ = id => document.getElementById(id);
 
-// ══ CREDENTIALS — localStorage ══
-const CRED_KEY = 'ftpstudio_creds';
-
+// ══ CREDENTIALS ══
+const CRED_KEY = 'ftpstudio_v2';
 function saveCreds() {
   localStorage.setItem(CRED_KEY, JSON.stringify({
-    proxy: $('iProxy').value,
-    token: $('iToken').value,
-    host:  $('iHost').value,
-    user:  $('iUser').value,
-    pass:  $('iPass').value,
-    port:  $('iPort').value,
+    proxy: $('iProxy').value, token: $('iToken').value,
+    host:  $('iHost').value,  user:  $('iUser').value,
+    pass:  $('iPass').value,  port:  $('iPort').value,
   }));
 }
-
 function loadCreds() {
   try {
     const c = JSON.parse(localStorage.getItem(CRED_KEY) || '{}');
@@ -361,90 +331,149 @@ function loadCreds() {
     if (c.port)  $('iPort').value  = c.port;
   } catch(e) {}
 }
-
-// Auto-save on any input change
 ['iProxy','iToken','iHost','iUser','iPass','iPort'].forEach(id => {
   $(id).addEventListener('change', saveCreds);
   $(id).addEventListener('blur', saveCreds);
 });
-
-// Pre-fill proxy URL
-if (!localStorage.getItem(CRED_KEY)) {
+// Pre-fill defaults if no saved creds
+const saved = localStorage.getItem(CRED_KEY);
+if (!saved) {
   $('iProxy').value = 'https://mahea.vercel.app/api/ftp';
 }
 loadCreds();
 
 // ══ STATE ══
 let connected = false, currentPath = '/', tabs = [], activeTab = null, ctxTarget = null;
-let cm = null; // CodeMirror instance
+let monacoEditor = null, monacoReady = false;
+let pendingActivation = null;
 
-const cfg = () => ({
-  proxy: $('iProxy').value.trim(),
-  token: $('iToken').value.trim(),
-  host:  $('iHost').value.trim(),
-  user:  $('iUser').value.trim(),
-  pass:  $('iPass').value.trim(),
-  port:  $('iPort').value.trim() || '21',
-});
+// ══ MONACO INIT ══
+require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
 
-// ══ CODEMIRROR INIT ══
-function initCM() {
-  if (cm) return;
-  cm = CodeMirror($('cm-container'), {
-    theme: 'material-darker',
-    lineNumbers: true,
-    matchBrackets: true,
-    autoCloseBrackets: true,
-    styleActiveLine: true,
-    indentUnit: 2,
-    tabSize: 2,
-    indentWithTabs: false,
-    lineWrapping: false,
-    extraKeys: {
-      'Ctrl-S': () => saveActive(),
-      'Cmd-S':  () => saveActive(),
-      'Tab': cm => {
-        if (cm.somethingSelected()) cm.indentSelection('add');
-        else cm.replaceSelection('  ', 'end');
-      },
-    },
+require(['vs/editor/editor.main'], function() {
+  // Define custom dark theme — no purple
+  monaco.editor.defineTheme('ftpstudio', {
+    base: 'vs-dark',
+    inherit: true,
+    rules: [
+      { token: 'comment',    foreground: '3d4f6e', fontStyle: 'italic' },
+      { token: 'keyword',    foreground: '38bdf8' },
+      { token: 'string',     foreground: '34d399' },
+      { token: 'number',     foreground: 'fb923c' },
+      { token: 'type',       foreground: '2dd4bf' },
+      { token: 'function',   foreground: 'fbbf24' },
+      { token: 'variable',   foreground: 'cbd5e1' },
+      { token: 'operator',   foreground: '7dd3fc' },
+      { token: 'delimiter',  foreground: '8892b0' },
+      { token: 'tag',        foreground: 'f87171' },
+      { token: 'attribute.name',  foreground: 'fbbf24' },
+      { token: 'attribute.value', foreground: '34d399' },
+      { token: 'metatag',    foreground: '38bdf8' },
+      { token: 'regexp',     foreground: 'fb923c' },
+      { token: 'constant',   foreground: 'f87171' },
+      { token: 'class',      foreground: '2dd4bf' },
+    ],
+    colors: {
+      'editor.background':           '#0e1117',
+      'editor.foreground':           '#cbd5e1',
+      'editorLineNumber.foreground': '#252d42',
+      'editorLineNumber.activeForeground': '#4b5a7a',
+      'editor.lineHighlightBackground':   '#141720',
+      'editor.selectionBackground':       '#38bdf830',
+      'editor.inactiveSelectionBackground': '#38bdf818',
+      'editorCursor.foreground':     '#38bdf8',
+      'editorWhitespace.foreground': '#1e2436',
+      'editorIndentGuide.background': '#1e2436',
+      'editorIndentGuide.activeBackground': '#2a3050',
+      'editor.findMatchBackground':  '#fbbf2440',
+      'editor.findMatchHighlightBackground': '#fbbf2420',
+      'editorWidget.background':     '#1b1f2e',
+      'editorWidget.border':         '#2a3050',
+      'input.background':            '#0e1117',
+      'input.border':                '#2a3050',
+      'input.foreground':            '#cbd5e1',
+      'focusBorder':                 '#38bdf8',
+      'scrollbar.shadow':            '#00000060',
+      'scrollbarSlider.background':  '#2a305060',
+      'scrollbarSlider.hoverBackground': '#2a3050aa',
+      'minimap.background':          '#0e1117',
+      'editorGutter.background':     '#141720',
+    }
   });
 
-  // Move dropzone into CM wrapper
-  const dz = $('dropZone');
-  $('cm-container').appendChild(dz);
+  monacoEditor = monaco.editor.create($('monaco-editor'), {
+    theme: 'ftpstudio',
+    language: 'plaintext',
+    fontSize: 13,
+    fontFamily: "'JetBrains Mono', monospace",
+    fontLigatures: true,
+    lineHeight: 22,
+    minimap: { enabled: true, scale: 1 },
+    scrollBeyondLastLine: false,
+    wordWrap: 'off',
+    automaticLayout: true,
+    tabSize: 2,
+    insertSpaces: true,
+    detectIndentation: true,
+    renderWhitespace: 'selection',
+    bracketPairColorization: { enabled: true },
+    guides: { bracketPairs: true, indentation: true },
+    suggestOnTriggerCharacters: true,
+    quickSuggestions: true,
+    formatOnPaste: false,
+    folding: true,
+    lineNumbers: 'on',
+    glyphMargin: false,
+    renderLineHighlight: 'line',
+    smoothScrolling: true,
+    cursorBlinking: 'smooth',
+    cursorSmoothCaretAnimation: 'on',
+    padding: { top: 10, bottom: 10 },
+  });
 
-  cm.on('change', () => {
+  // Ctrl+S → save
+  monacoEditor.addCommand(
+    monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS,
+    () => saveActive()
+  );
+
+  // Cursor position → statusbar
+  monacoEditor.onDidChangeCursorPosition(e => {
+    $('sbCursor').textContent = `Ln ${e.position.lineNumber}, Col ${e.position.column}`;
+  });
+
+  // Content change → dirty flag
+  monacoEditor.onDidChangeModelContent(() => {
     const tab = tabs.find(t => t.id === activeTab);
     if (!tab) return;
-    tab.content = cm.getValue();
+    tab.content = monacoEditor.getValue();
     tab.dirty = true;
     renderTabs();
     updateSB(tab);
   });
 
-  cm.on('cursorActivity', () => {
-    const cur = cm.getCursor();
-    $('sbCursor').textContent = `Ln ${cur.line+1}, Col ${cur.ch+1}`;
-  });
-}
+  monacoReady = true;
 
-// ══ LANG MAP ══
-const LM = {
-  html:'htmlmixed', htm:'htmlmixed', php:'php', css:'css',
-  js:'javascript', jsx:'javascript', ts:'javascript', tsx:'javascript',
-  json:'javascript', py:'python', md:'markdown', sh:'shell', bash:'shell',
-  txt:'', svg:'xml', xml:'xml',
-};
-function getLang(name) { return LM[name.split('.').pop().toLowerCase()] ?? ''; }
+  // If a tab was waiting for Monaco
+  if (pendingActivation !== null) {
+    activateTab(pendingActivation);
+    pendingActivation = null;
+  }
+});
 
 // ══ API ══
+const cfg = () => ({
+  proxy: $('iProxy').value.trim(), token: $('iToken').value.trim(),
+  host:  $('iHost').value.trim(),  user:  $('iUser').value.trim(),
+  pass:  $('iPass').value.trim(),  port:  $('iPort').value.trim() || '21',
+});
+
 async function api(action, extra={}) {
   const c = cfg();
   if (!c.proxy) throw new Error('URL proxy manquante');
   const r = await fetch(c.proxy, {
     method: 'POST',
-    headers: { 'Content-Type':'application/json', 'X-Auth-Token': c.token },
+    headers: { 'Content-Type': 'application/json', 'X-Auth-Token': c.token },
     body: JSON.stringify({ action, host:c.host, user:c.user, pass:c.pass, port:c.port, ...extra }),
   });
   const d = await r.json();
@@ -455,8 +484,8 @@ async function api(action, extra={}) {
 // ══ TOAST ══
 let _tt;
 function toast(msg, type='') {
-  const t=$('toast'); t.textContent=msg; t.className='show '+type;
-  clearTimeout(_tt); _tt=setTimeout(()=>t.className='',2600);
+  const t = $('toast'); t.textContent = msg; t.className = 'show ' + type;
+  clearTimeout(_tt); _tt = setTimeout(() => t.className = '', 2600);
 }
 
 // ══ CONNECT ══
@@ -477,7 +506,7 @@ $('btnConnect').addEventListener('click', async () => {
     toast('Connecté à ' + c.host, 'ok');
   } catch(e) {
     $('dot').className = 'err';
-    $('statusMsg').textContent = 'Erreur: ' + e.message;
+    $('statusMsg').textContent = e.message;
     toast(e.message, 'err');
   }
 });
@@ -489,13 +518,13 @@ function disconnect() {
   $('btnConnect').textContent = 'Connecter';
   $('btnConnect').classList.remove('disc');
   ['btnUp','btnRefresh','btnNewFile','btnNewDir','btnUpload'].forEach(id => $(id).disabled = true);
-  $('tree').innerHTML = '<div style="padding:20px 14px;color:var(--text3);font-size:11.5px;font-family:var(--mono)">Déconnecté</div>';
+  $('tree').innerHTML = '<div style="padding:18px 12px;color:var(--text3);font-size:11px;font-family:var(--mono)">Déconnecté</div>';
   toast('Déconnecté');
 }
 
 // ══ FILE TREE ══
 async function loadDir(path) {
-  $('tree').innerHTML = '<div style="padding:14px;display:flex;gap:8px;align-items:center;color:var(--text2);font-size:12px;font-family:var(--mono)"><span class="spin"></span> Chargement…</div>';
+  $('tree').innerHTML = '<div style="padding:12px;display:flex;gap:8px;align-items:center;color:var(--text2);font-size:11px;font-family:var(--mono)"><span class="spin"></span> Chargement…</div>';
   const d = await api('list', {path});
   currentPath = path;
   $('pathDisplay').textContent = path;
@@ -504,25 +533,23 @@ async function loadDir(path) {
   renderTree(d.items, path);
 }
 
-const EC = {html:'html',htm:'html',css:'css',js:'js',jsx:'js',ts:'ts',tsx:'ts',
-            php:'php',py:'py',json:'json',md:'md',txt:'txt',svg:'svg',
-            png:'img',jpg:'img',jpeg:'img',gif:'img',webp:'img',ico:'img'};
-const EI = {html:'🌐',htm:'🌐',css:'🎨',js:'⚡',jsx:'⚡',ts:'🔷',tsx:'🔷',
-            php:'🐘',py:'🐍',json:'{}',md:'📝',txt:'📄',svg:'◈',
-            png:'🖼',jpg:'🖼',jpeg:'🖼',gif:'🖼',webp:'🖼'};
+const EC  = {html:'html',htm:'html',css:'css',js:'js',jsx:'js',ts:'ts',tsx:'ts',php:'php',py:'py',json:'json',md:'md',txt:'txt',svg:'svg',png:'img',jpg:'img',jpeg:'img',gif:'img',webp:'img',ico:'img'};
+const EI  = {html:'🌐',htm:'🌐',css:'🎨',js:'⚡',jsx:'⚡',ts:'🔷',tsx:'🔷',php:'🐘',py:'🐍',json:'{}',md:'📝',txt:'📄',svg:'◈',png:'🖼',jpg:'🖼',jpeg:'🖼',gif:'🖼',webp:'🖼'};
+const LID = {html:'html',htm:'html',css:'css',js:'javascript',jsx:'javascript',ts:'typescript',tsx:'typescript',php:'php',py:'python',json:'json',md:'markdown',sh:'shell',bash:'shell',svg:'xml',xml:'xml',txt:'plaintext'};
 
 function getIco(name, isDir) { return isDir ? '📂' : (EI[name.split('.').pop().toLowerCase()] || '📄'); }
+function getLang(name) { return LID[name.split('.').pop().toLowerCase()] || 'plaintext'; }
 function fmtSize(b) {
   if (!b) return '';
-  if (b < 1024) return b+'B';
-  if (b < 1048576) return (b/1024).toFixed(1)+'K';
-  return (b/1048576).toFixed(1)+'M';
+  if (b < 1024) return b + 'B';
+  if (b < 1048576) return (b/1024).toFixed(1) + 'K';
+  return (b/1048576).toFixed(1) + 'M';
 }
 
 function renderTree(items, basePath) {
   const tree = $('tree');
   if (!items.length) {
-    tree.innerHTML = '<div style="padding:14px;color:var(--text3);font-size:11.5px;font-family:var(--mono)">Dossier vide</div>';
+    tree.innerHTML = '<div style="padding:12px;color:var(--text3);font-size:11px;font-family:var(--mono)">Dossier vide</div>';
     return;
   }
   items.sort((a,b) => a.type===b.type ? a.name.localeCompare(b.name) : a.type==='dir' ? -1 : 1);
@@ -533,7 +560,7 @@ function renderTree(items, basePath) {
     const ec = item.type==='dir' ? 'is-dir' : 'ext-'+(EC[ext]||'txt');
     const div = document.createElement('div');
     div.className = 'ti ' + ec;
-    div.innerHTML = `<span class="ico">${getIco(item.name, item.type==='dir')}</span><span class="nm">${item.name}</span><span class="sz">${item.type==='file'?fmtSize(item.size):''}</span>`;
+    div.innerHTML = `<span class="ico">${getIco(item.name,item.type==='dir')}</span><span class="nm">${item.name}</span><span class="sz">${item.type==='file'?fmtSize(item.size):''}</span>`;
     div.addEventListener('click', () => {
       if (item.type==='dir') { loadDir(fp); }
       else {
@@ -562,7 +589,7 @@ async function openFile(path, name) {
     const bytes = Uint8Array.from(raw, c=>c.charCodeAt(0));
     const content = new TextDecoder('utf-8').decode(bytes);
     const id = Date.now() + Math.random();
-    tab = {id, path, name, content, dirty:false, ext:name.split('.').pop().toLowerCase()};
+    tab = {id, path, name, content, dirty:false, ext:name.split('.').pop().toLowerCase(), model:null};
     tabs.push(tab);
     renderTabs();
     activateTab(id);
@@ -572,11 +599,11 @@ async function openFile(path, name) {
 
 // ══ TABS ══
 function renderTabs() {
-  const bar = $('tabs'); bar.innerHTML = '';
+  const bar = $('tabs-bar'); bar.innerHTML = '';
   for (const tab of tabs) {
     const div = document.createElement('div');
     div.className = 'tab' + (tab.id===activeTab?' active':'') + (tab.dirty?' dirty':'');
-    div.innerHTML = `<span style="font-size:11px;opacity:.7">${getIco(tab.name,false)}</span><span class="tname">${tab.name}</span><button class="tc">×</button>`;
+    div.innerHTML = `<span style="font-size:11px;opacity:.6">${getIco(tab.name,false)}</span><span class="tname">${tab.name}</span><button class="tc" title="Fermer">×</button>`;
     div.addEventListener('click', e => { if (!e.target.classList.contains('tc')) activateTab(tab.id); });
     div.querySelector('.tc').addEventListener('click', e => { e.stopPropagation(); closeTab(tab.id); });
     bar.appendChild(div);
@@ -584,33 +611,34 @@ function renderTabs() {
 }
 
 function activateTab(id) {
+  if (!monacoReady) { pendingActivation = id; return; }
+
   activeTab = id;
   const tab = tabs.find(t=>t.id===id);
   if (!tab) { showWelcome(); return; }
 
-  $('welcome').style.display = 'none';
-  $('editBar').style.display = 'flex';
-  $('cm-wrap').classList.add('visible');
+  $('welcome').style.display   = 'none';
+  $('editBar').style.display   = 'flex';
+  $('monaco-wrap').classList.add('visible');
 
-  initCM();
-
+  // Create or reuse Monaco model (preserves undo history per file)
   const lang = getLang(tab.name);
-  cm.setOption('mode', lang || null);
-  cm.setValue(tab.content);
-  cm.clearHistory();
-  setTimeout(() => cm.refresh(), 10);
+  if (!tab.model) {
+    tab.model = monaco.editor.createModel(tab.content, lang);
+  }
+  monacoEditor.setModel(tab.model);
+  monacoEditor.focus();
 
-  $('sbLang').textContent = tab.ext.toUpperCase();
+  $('sbLang').textContent   = lang.toUpperCase();
   $('editInfo').textContent = tab.path;
   updateSB(tab);
   renderTabs();
-  cm.focus();
 }
 
 function showWelcome() {
   $('welcome').style.display = 'flex';
   $('editBar').style.display = 'none';
-  $('cm-wrap').classList.remove('visible');
+  $('monaco-wrap').classList.remove('visible');
   activeTab = null;
   renderTabs();
 }
@@ -618,6 +646,7 @@ function showWelcome() {
 function closeTab(id) {
   const tab = tabs.find(t=>t.id===id);
   if (tab?.dirty && !confirm(`"${tab.name}" non sauvegardé. Fermer ?`)) return;
+  if (tab?.model) tab.model.dispose();
   tabs = tabs.filter(t=>t.id!==id);
   if (activeTab===id) { const l=tabs[tabs.length-1]; l ? activateTab(l.id) : showWelcome(); }
   else renderTabs();
@@ -632,7 +661,7 @@ function updateSB(tab) {
 // ══ SAVE ══
 async function saveActive() {
   const tab = tabs.find(t=>t.id===activeTab); if (!tab) return;
-  if (cm) tab.content = cm.getValue();
+  if (tab.model) tab.content = tab.model.getValue();
   try {
     const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(tab.content)));
     await api('put', {path:tab.path, content:b64});
@@ -644,10 +673,15 @@ async function saveActive() {
 
 $('btnSave').addEventListener('click', saveActive);
 
+$('btnFormat').addEventListener('click', () => {
+  if (monacoEditor) monacoEditor.getAction('editor.action.formatDocument').run();
+});
+
 $('btnDownload').addEventListener('click', () => {
   const tab = tabs.find(t=>t.id===activeTab); if (!tab) return;
+  const content = tab.model ? tab.model.getValue() : tab.content;
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([tab.content], {type:'text/plain'}));
+  a.href = URL.createObjectURL(new Blob([content], {type:'text/plain'}));
   a.download = tab.name; a.click();
 });
 
@@ -655,12 +689,12 @@ $('btnSaveAs').addEventListener('click', () => {
   const tab = tabs.find(t=>t.id===activeTab); if (!tab) return;
   openModal('Enregistrer sous', tab.path, async val => {
     try {
-      if (cm) tab.content = cm.getValue();
-      const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(tab.content)));
+      const content = tab.model ? tab.model.getValue() : tab.content;
+      const b64 = btoa(String.fromCharCode(...new TextEncoder().encode(content)));
       await api('put', {path:val, content:b64});
       tab.path=val; tab.name=val.split('/').pop(); tab.dirty=false;
       renderTabs(); activateTab(tab.id);
-      toast('Sauvegardé sous '+tab.name, 'ok');
+      toast('Sauvegardé sous ' + tab.name, 'ok');
     } catch(e) { toast(e.message,'err'); }
   });
 });
@@ -670,7 +704,6 @@ $('btnUp').addEventListener('click', () => {
   const p = currentPath.replace(/\/$/,'').split('/'); p.pop(); loadDir(p.join('/')||'/');
 });
 $('btnRefresh').addEventListener('click', () => loadDir(currentPath));
-
 $('btnNewFile').addEventListener('click', () => {
   openModal('Nouveau fichier','index.html', async name => {
     const path=(currentPath==='/'?'':currentPath)+'/'+name;
@@ -678,7 +711,6 @@ $('btnNewFile').addEventListener('click', () => {
     catch(e) { toast(e.message,'err'); }
   });
 });
-
 $('btnNewDir').addEventListener('click', () => {
   openModal('Nouveau dossier','dossier', async name => {
     const path=(currentPath==='/'?'':currentPath)+'/'+name;
@@ -693,7 +725,6 @@ $('fileInput').addEventListener('change', async e => {
   for (const f of e.target.files) await uploadFile(f);
   e.target.value=''; await loadDir(currentPath);
 });
-
 async function uploadFile(file) {
   return new Promise((res,rej) => {
     const r = new FileReader();
@@ -725,14 +756,12 @@ function showCtx(x,y,type) {
   $('ctx-download').style.display=type==='file'?'':'none';
 }
 document.addEventListener('click', ()=>$('ctxMenu').style.display='none');
-
 $('ctx-open').addEventListener('click', ()=>{ if(ctxTarget?.type==='file') openFile(ctxTarget.path,ctxTarget.name); });
 $('ctx-rename').addEventListener('click', ()=>{
   if(!ctxTarget) return;
   openModal('Renommer',ctxTarget.name, async nn=>{
     const p=ctxTarget.path.substring(0,ctxTarget.path.lastIndexOf('/'))||'/';
-    const np=(p==='/'?'':p)+'/'+nn;
-    try { await api('rename',{from:ctxTarget.path,to:np}); await loadDir(currentPath); toast('Renommé','ok'); }
+    try { await api('rename',{from:ctxTarget.path,to:(p==='/'?'':p)+'/'+nn}); await loadDir(currentPath); toast('Renommé','ok'); }
     catch(e) { toast(e.message,'err'); }
   });
 });
@@ -759,14 +788,14 @@ let modalCb=null;
 function openModal(title,def,cb){
   modalCb=cb; $('modal-title').textContent=title; $('modal-input').value=def;
   $('modal-overlay').classList.add('show');
-  setTimeout(()=>{ const i=$('modal-input'); i.focus(); i.select(); },50);
+  setTimeout(()=>{ const i=$('modal-input'); i.focus(); i.select(); },60);
 }
-$('modal-ok').addEventListener('click', ()=>{
+$('modal-ok').addEventListener('click',()=>{
   const v=$('modal-input').value.trim(); if(!v) return;
   $('modal-overlay').classList.remove('show'); if(modalCb) modalCb(v);
 });
-$('modal-cancel').addEventListener('click', ()=>$('modal-overlay').classList.remove('show'));
-$('modal-input').addEventListener('keydown', e=>{
+$('modal-cancel').addEventListener('click',()=>$('modal-overlay').classList.remove('show'));
+$('modal-input').addEventListener('keydown',e=>{
   if(e.key==='Enter') $('modal-ok').click();
   if(e.key==='Escape') $('modal-cancel').click();
 });
