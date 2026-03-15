@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FTP Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0b0d12;
+  --bg2:      #111318;
+  --bg3:      #181b24;
+  --bg4:      #1e2230;
+  --border:   #1f2435;
+  --border2:  #2a3050;
+  --accent:   #4f8eff;
+  --accent2:  #6c4fff;
+  --green:    #2ecc8e;
+  --red:      #ff4d6d;
+  --yellow:   #f5c842;
+  --orange:   #ff8c42;
+  --pink:     #ff6eb4;
+  --text:     #c4ceea;
+  --text2:    #5f6b8a;
+  --text3:    #2e3550;
+  --mono:     'JetBrains Mono', monospace;
+  --ui:       'Syne', sans-serif;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--ui);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ── */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  height: 50px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
+.logo {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  margin-right: 6px;
+}
+.logo em { color: var(--accent); font-style: normal; }
+.logo span { color: var(--accent2); }
+
+.f { display: flex; align-items: center; gap: 6px; }
+
+input.tb {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 5px 9px;
+  border-radius: 5px;
+  outline: none;
+  transition: border-color .15s;
+  height: 30px;
+}
+input.tb:focus { border-color: var(--accent); }
+input.tb::placeholder { color: var(--text3); }
+#iHost { width: 148px; }
+#iUser { width: 100px; }
+#iPass { width: 100px; }
+#iPort { width: 52px; }
+#iProxy { width: 190px; }
+#iToken { width: 130px; }
+
+.vsep { width: 1px; height: 22px; background: var(--border2); flex-shrink: 0; margin: 0 2px; }
+
+#btnConnect {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 14px;
+  height: 30px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, transform .1s;
+  letter-spacing: 0.04em;
+}
+#btnConnect:hover { background: #6aa3ff; }
+#btnConnect:active { transform: scale(.97); }
+#btnConnect.disc { background: var(--red); }
+
+#dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text3);
+  flex-shrink: 0;
+  transition: background .3s, box-shadow .3s;
+}
+#dot.on  { background: var(--green); box-shadow: 0 0 8px var(--green); }
+#dot.err { background: var(--red);   box-shadow: 0 0 8px var(--red); }
+
+#statusMsg {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--text2);
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── BODY ── */
+#body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ── */
+#sidebar {
+  width: 230px;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+#sideHead {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 36px;
+}
+#pathDisplay {
+  font-size: 10.5px;
+  font-family: var(--mono);
+  color: var(--accent);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ib {
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1;
+  transition: color .1s, background .1s;
+  flex-shrink: 0;
+}
+.ib:hover { color: var(--text); background: var(--bg3); }
+.ib:disabled { opacity: .3; cursor: default; }
+
+#tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 3px 0;
+}
+#tree::-webkit-scrollbar { width: 3px; }
+#tree::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.ti {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 10px;
+  font-size: 12px;
+  font-family: var(--mono);
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 1px 4px;
+  transition: background .1s;
+  color: var(--text);
+}
+.ti:hover { background: var(--bg3); }
+.ti.active { background: rgba(79,142,255,.13); color: var(--accent); }
+.ti .ico { width: 15px; text-align: center; flex-shrink: 0; font-size: 12px; }
+.ti .nm  { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ti .sz  { font-size: 9.5px; color: var(--text3); flex-shrink: 0; margin-left: 2px; }
+.ti.is-dir .ico { color: var(--yellow); }
+.ext-html .ico { color: #e44d26; }
+.ext-css  .ico { color: #2965f1; }
+.ext-js   .ico { color: var(--yellow); }
+.ext-ts   .ico { color: #3178c6; }
+.ext-php  .ico { color: #8993be; }
+.ext-py   .ico { color: #3572a5; }
+.ext-json .ico { color: var(--green); }
+.ext-md   .ico { color: var(--text2); }
+.ext-txt  .ico { color: var(--text2); }
+.ext-svg  .ico { color: var(--orange); }
+.ext-img  .ico { color: var(--pink); }
+
+/* context menu */
+#ctxMenu {
+  position: fixed;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 7px;
+  padding: 4px;
+  z-index: 1000;
+  min-width: 150px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.5);
+  display: none;
+}
+#ctxMenu button {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 10px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background .1s;
+}
+#ctxMenu button:hover { background: var(--bg4); }
+#ctxMenu button.danger { color: var(--red); }
+#ctxMenu hr { border: none; border-top: 1px solid var(--border); margin: 3px 0; }
+
+/* ── EDITOR AREA ── */
+#editor-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* TABS */
+#tabs {
+  display: flex;
+  align-items: center;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+  height: 38px;
+}
+#tabs::-webkit-scrollbar { height: 2px; }
+#tabs::-webkit-scrollbar-thumb { background: var(--border2); }
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 38px;
+  font-size: 12px;
+  font-family: var(--mono);
+  cursor: pointer;
+  white-space: nowrap;
+  border-right: 1px solid var(--border);
+  color: var(--text2);
+  transition: color .1s, background .1s;
+  flex-shrink: 0;
+  position: relative;
+}
+.tab:hover { color: var(--text); background: var(--bg3); }
+.tab.active {
+  color: var(--text);
+  background: var(--bg);
+  border-bottom: 2px solid var(--accent);
+}
+.tab.dirty .tab-name::after { content: '●'; font-size: 8px; color: var(--yellow); margin-left: 4px; vertical-align: middle; }
+.tab .tab-close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 3px;
+  transition: color .1s, background .1s;
+}
+.tab .tab-close:hover { color: var(--red); background: rgba(255,77,109,.15); }
+
+#no-tabs {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text3);
+}
+#no-tabs .big { font-size: 48px; }
+#no-tabs .msg { font-size: 13px; font-family: var(--mono); }
+
+/* Editor toolbar */
+#editBar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.eb-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-family: var(--ui);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .1s;
+  letter-spacing: .03em;
+}
+.eb-btn:hover { color: var(--text); border-color: var(--text3); }
+.eb-btn.save { background: var(--accent); color: #fff; border-color: var(--accent); }
+.eb-btn.save:hover { background: #6aa3ff; }
+
+#editInfo {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-family: var(--mono);
+  color: var(--text3);
+}
+
+/* CODE EDITOR */
+#code-wrap {
+  flex: 1;
+  display: none;
+  overflow: hidden;
+  position: relative;
+}
+#code-wrap.visible { display: flex; }
+
+#lineNums {
+  padding: 14px 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text3);
+  overflow: hidden;
+  user-select: none;
+  flex-shrink: 0;
+  width: 52px;
+  padding-right: 10px;
+}
+
+#codeArea {
+  flex: 1;
+  padding: 14px 16px;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.65;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  white-space: pre;
+  overflow-wrap: normal;
+  tab-size: 2;
+  -webkit-tab-size: 2;
+  caret-color: var(--accent);
+}
+#codeArea::-webkit-scrollbar { width: 5px; height: 5px; }
+#codeArea::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+#codeArea::selection { background: rgba(79,142,255,.25); }
+
+/* WELCOME / empty state */
+#welcome {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+#welcome .w-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text3);
+  letter-spacing: 0.06em;
+}
+#welcome .w-sub {
+  font-size: 13px;
+  font-family: var(--mono);
+  color: var(--text3);
+}
+
+/* STATUSBAR */
+#statusbar {
+  height: 22px;
+  background: var(--accent2);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 16px;
+  flex-shrink: 0;
+}
+#statusbar span {
+  font-size: 10.5px;
+  font-family: var(--mono);
+  color: rgba(255,255,255,.75);
+}
+#statusbar span.hi { color: #fff; font-weight: 700; }
+
+/* MODAL */
+#modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.65);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#modal-overlay.show { display: flex; }
+#modal {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 22px 24px;
+  min-width: 300px;
+  max-width: 440px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+#modal h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+#modal input {
+  width: 100%;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color .15s;
+}
+#modal input:focus { border-color: var(--accent); }
+#modal .m-btns { display: flex; gap: 8px; margin-top: 14px; justify-content: flex-end; }
+#modal .m-btns button {
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  transition: all .1s;
+}
+#modal .m-btns .ok  { background: var(--accent); color: #fff; border-color: var(--accent); }
+#modal .m-btns .ok:hover { background: #6aa3ff; }
+#modal .m-btns .cancel { background: var(--bg4); color: var(--text2); }
+#modal .m-btns .cancel:hover { color: var(--text); }
+
+/* TOAST */
+#toast {
+  position: fixed;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 8px 16px;
+  border-radius: 7px;
+  z-index: 900;
+  opacity: 0;
+  transition: opacity .2s, transform .2s;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.ok  { border-color: var(--green); color: var(--green); }
+#toast.err { border-color: var(--red);   color: var(--red); }
+
+/* SPINNER */
+.spin {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* upload drop */
+#dropZone {
+  position: absolute; inset: 0;
+  background: rgba(79,142,255,.07);
+  border: 2px dashed var(--accent);
+  border-radius: 6px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--accent);
+  font-family: var(--mono);
+  z-index: 10;
+  pointer-events: none;
+}
+#dropZone.show { display: flex; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="logo"><em>FTP</em><span>Studio</span></div>
+
+  <div class="f">
+    <input class="tb" id="iProxy" placeholder="https://mon-app.vercel.app/api/ftp" title="URL du proxy Vercel">
+    <input class="tb" id="iToken" placeholder="token secret" type="password" title="SECRET_TOKEN">
+  </div>
+
+  <div class="vsep"></div>
+
+  <div class="f">
+    <input class="tb" id="iHost"  placeholder="ftp.monserveur.com">
+    <input class="tb" id="iUser"  placeholder="utilisateur">
+    <input class="tb" id="iPass"  placeholder="mot de passe" type="password">
+    <input class="tb" id="iPort"  placeholder="21" value="21">
+  </div>
+
+  <button id="btnConnect">Connecter</button>
+
+  <div class="vsep"></div>
+  <div id="dot"></div>
+  <div id="statusMsg">Non connecté</div>
+</div>
+
+<!-- BODY -->
+<div id="body">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div id="sideHead">
+      <div id="pathDisplay">/</div>
+      <button class="ib" id="btnUp" title="Dossier parent" disabled>↑</button>
+      <button class="ib" id="btnRefresh" title="Rafraîchir" disabled>⟳</button>
+      <button class="ib" id="btnNewFile" title="Nouveau fichier" disabled>+</button>
+      <button class="ib" id="btnNewDir" title="Nouveau dossier" disabled>📁</button>
+      <button class="ib" id="btnUpload" title="Upload fichier" disabled>⬆</button>
+      <input type="file" id="fileInput" style="display:none" multiple>
+    </div>
+    <div id="tree">
+      <div style="padding:20px 12px; color:var(--text3); font-size:12px; font-family:var(--mono);">
+        Connectez-vous pour naviguer
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITOR AREA -->
+  <div id="editor-area">
+    <div id="tabs"></div>
+
+    <div id="welcome">
+      <div class="w-title">FTP Studio</div>
+      <div class="w-sub">Connectez-vous puis ouvrez un fichier</div>
+    </div>
+
+    <div id="editBar">
+      <button class="eb-btn save" id="btnSave">💾 Sauvegarder</button>
+      <button class="eb-btn" id="btnSaveAs">Enregistrer sous…</button>
+      <button class="eb-btn" id="btnDownload">⬇ Télécharger</button>
+      <div id="editInfo"></div>
+    </div>
+
+    <div id="code-wrap">
+      <div id="lineNums"></div>
+      <textarea id="codeArea" spellcheck="false"></textarea>
+      <div id="dropZone">Déposer pour uploader</div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUSBAR -->
+<div id="statusbar">
+  <span id="sbPath" class="hi">/</span>
+  <span id="sbLang">—</span>
+  <span id="sbLines">0 lignes</span>
+  <span id="sbSize">0 B</span>
+</div>
+
+<!-- CONTEXT MENU -->
+<div id="ctxMenu">
+  <button id="ctx-open">📄 Ouvrir</button>
+  <button id="ctx-rename">✏️ Renommer</button>
+  <button id="ctx-download">⬇ Télécharger</button>
+  <hr>
+  <button id="ctx-delete" class="danger">🗑 Supprimer</button>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h3 id="modal-title">Nouveau fichier</h3>
+    <input id="modal-input" type="text" placeholder="">
+    <div class="m-btns">
+      <button class="cancel" id="modal-cancel">Annuler</button>
+      <button class="ok" id="modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ──────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────
+let connected = false;
+let currentPath = '/';
+let history = ['/'];
+let tabs = [];       // {id, path, name, content, dirty, ext}
+let activeTab = null;
+let ctxTarget = null;
+
+const cfg = () => ({
+  proxy: document.getElementById('iProxy').value.trim(),
+  token: document.getElementById('iToken').value.trim(),
+  host:  document.getElementById('iHost').value.trim(),
+  user:  document.getElementById('iUser').value.trim(),
+  pass:  document.getElementById('iPass').value.trim(),
+  port:  document.getElementById('iPort').value.trim() || '21',
+});
+
+// ──────────────────────────────────────────────────
+// API
+// ──────────────────────────────────────────────────
+async function api(action, extra = {}) {
+  const c = cfg();
+  if (!c.proxy) throw new Error('URL proxy manquante');
+  const r = await fetch(c.proxy, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Auth-Token': c.token },
+    body: JSON.stringify({ action, host: c.host, user: c.user, pass: c.pass, port: c.port, ...extra }),
+  });
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error || 'Erreur serveur');
+  return d;
+}
+
+// ──────────────────────────────────────────────────
+// TOAST
+// ──────────────────────────────────────────────────
+let toastTimer;
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = ''; }, 2500);
+}
+
+// ──────────────────────────────────────────────────
+// CONNECT
+// ──────────────────────────────────────────────────
+document.getElementById('btnConnect').addEventListener('click', async () => {
+  if (connected) { disconnect(); return; }
+  const c = cfg();
+  if (!c.proxy || !c.host || !c.user) { toast('Remplissez proxy, host et user', 'err'); return; }
+  setStatus('connecting');
+  try {
+    await loadDir('/');
+    connected = true;
+    setStatus('on');
+    document.getElementById('btnConnect').textContent = 'Déconnecter';
+    document.getElementById('btnConnect').classList.add('disc');
+    ['btnUp','btnRefresh','btnNewFile','btnNewDir','btnUpload'].forEach(id => {
+      document.getElementById(id).disabled = false;
+    });
+    toast('Connecté à ' + c.host, 'ok');
+  } catch(e) {
+    setStatus('err');
+    toast(e.message, 'err');
+  }
+});
+
+function disconnect() {
+  connected = false;
+  setStatus('off');
+  document.getElementById('btnConnect').textContent = 'Connecter';
+  document.getElementById('btnConnect').classList.remove('disc');
+  ['btnUp','btnRefresh','btnNewFile','btnNewDir','btnUpload'].forEach(id => {
+    document.getElementById(id).disabled = true;
+  });
+  document.getElementById('tree').innerHTML = '<div style="padding:20px 12px; color:var(--text3); font-size:12px; font-family:var(--mono);">Déconnecté</div>';
+  toast('Déconnecté');
+}
+
+function setStatus(state) {
+  const dot = document.getElementById('dot');
+  const msg = document.getElementById('statusMsg');
+  dot.className = '';
+  if (state === 'on')          { dot.classList.add('on'); msg.textContent = 'Connecté — ' + cfg().host; }
+  else if (state === 'err')    { dot.classList.add('err'); msg.textContent = 'Erreur de connexion'; }
+  else if (state === 'connecting') { msg.textContent = 'Connexion…'; }
+  else                         { msg.textContent = 'Non connecté'; }
+}
+
+// ──────────────────────────────────────────────────
+// FILE TREE
+// ──────────────────────────────────────────────────
+async function loadDir(path) {
+  document.getElementById('tree').innerHTML = '<div style="padding:12px; display:flex; gap:8px; align-items:center; color:var(--text2); font-size:12px; font-family:var(--mono);"><span class="spin"></span> Chargement…</div>';
+  const d = await api('list', { path });
+  currentPath = path;
+  document.getElementById('pathDisplay').textContent = path;
+  document.getElementById('sbPath').textContent = path;
+  document.getElementById('btnUp').disabled = path === '/';
+  renderTree(d.items, path);
+}
+
+function extClass(name) {
+  const e = name.split('.').pop().toLowerCase();
+  const map = { html:'html', htm:'html', css:'css', js:'js', ts:'ts', jsx:'js', tsx:'ts',
+                php:'php', py:'py', json:'json', md:'md', txt:'txt', svg:'svg',
+                png:'img', jpg:'img', jpeg:'img', gif:'img', webp:'img', ico:'img' };
+  return map[e] ? 'ext-' + map[e] : '';
+}
+
+function fileIcon(name, isDir) {
+  if (isDir) return '📂';
+  const e = name.split('.').pop().toLowerCase();
+  const m = { html:'🌐', htm:'🌐', css:'🎨', js:'⚡', ts:'🔷', jsx:'⚡', tsx:'🔷',
+              php:'🐘', py:'🐍', json:'📋', md:'📝', txt:'📄', svg:'🖼',
+              png:'🖼', jpg:'🖼', jpeg:'🖼', gif:'🖼', webp:'🖼' };
+  return m[e] || '📄';
+}
+
+function fmtSize(b) {
+  if (b === 0) return '';
+  if (b < 1024) return b + 'B';
+  if (b < 1048576) return (b/1024).toFixed(1) + 'K';
+  return (b/1048576).toFixed(1) + 'M';
+}
+
+function renderTree(items, basePath) {
+  const tree = document.getElementById('tree');
+  if (!items.length) {
+    tree.innerHTML = '<div style="padding:12px; color:var(--text3); font-size:12px; font-family:var(--mono);">Dossier vide</div>';
+    return;
+  }
+  // Sort: dirs first, then files
+  items.sort((a, b) => {
+    if (a.type === b.type) return a.name.localeCompare(b.name);
+    return a.type === 'dir' ? -1 : 1;
+  });
+  tree.innerHTML = '';
+  for (const item of items) {
+    const fullPath = (basePath === '/' ? '' : basePath) + '/' + item.name;
+    const div = document.createElement('div');
+    div.className = 'ti' + (item.type === 'dir' ? ' is-dir' : ' ' + extClass(item.name));
+    div.dataset.path = fullPath;
+    div.dataset.type = item.type;
+    div.dataset.name = item.name;
+    div.innerHTML = `<span class="ico">${fileIcon(item.name, item.type==='dir')}</span>
+                     <span class="nm">${item.name}</span>
+                     <span class="sz">${item.type==='file' ? fmtSize(item.size) : ''}</span>`;
+
+    div.addEventListener('click', () => {
+      if (item.type === 'dir') {
+        history.push(currentPath);
+        loadDir(fullPath);
+      } else {
+        openFile(fullPath, item.name);
+        document.querySelectorAll('.ti').forEach(t => t.classList.remove('active'));
+        div.classList.add('active');
+      }
+    });
+
+    div.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      ctxTarget = { path: fullPath, name: item.name, type: item.type };
+      showCtx(e.clientX, e.clientY, item.type);
+    });
+
+    tree.appendChild(div);
+  }
+}
+
+// ──────────────────────────────────────────────────
+// OPEN / EDIT FILE
+// ──────────────────────────────────────────────────
+async function openFile(path, name) {
+  // Check if already open
+  let tab = tabs.find(t => t.path === path);
+  if (tab) { activateTab(tab.id); return; }
+
+  toast('Chargement…');
+  try {
+    const d = await api('get', { path });
+    const raw = atob(d.content);
+    const decoder = new TextDecoder('utf-8');
+    const bytes = Uint8Array.from(raw, c => c.charCodeAt(0));
+    const content = decoder.decode(bytes);
+
+    const id = Date.now() + Math.random();
+    tab = { id, path, name, content, dirty: false, ext: name.split('.').pop().toLowerCase() };
+    tabs.push(tab);
+    renderTabs();
+    activateTab(id);
+    toast('Ouvert', 'ok');
+  } catch(e) {
+    toast(e.message, 'err');
+  }
+}
+
+function renderTabs() {
+  const tabBar = document.getElementById('tabs');
+  tabBar.innerHTML = '';
+  for (const tab of tabs) {
+    const div = document.createElement('div');
+    div.className = 'tab' + (tab.id === activeTab ? ' active' : '') + (tab.dirty ? ' dirty' : '');
+    div.innerHTML = `<span class="tab-name">${tab.name}</span>
+                     <button class="tab-close" title="Fermer">×</button>`;
+    div.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('tab-close')) activateTab(tab.id);
+    });
+    div.querySelector('.tab-close').addEventListener('click', e => {
+      e.stopPropagation();
+      closeTab(tab.id);
+    });
+    tabBar.appendChild(div);
+  }
+}
+
+function activateTab(id) {
+  activeTab = id;
+  const tab = tabs.find(t => t.id === id);
+  if (!tab) { showWelcome(); return; }
+
+  // Show editor
+  document.getElementById('welcome').style.display = 'none';
+  document.getElementById('editBar').style.display = 'flex';
+  document.getElementById('code-wrap').classList.add('visible');
+
+  document.getElementById('codeArea').value = tab.content;
+  updateLineNums(tab.content);
+  updateStatusBar(tab);
+  renderTabs();
+
+  document.getElementById('sbLang').textContent = tab.ext.toUpperCase();
+  document.getElementById('editInfo').textContent = tab.path;
+}
+
+function showWelcome() {
+  document.getElementById('welcome').style.display = 'flex';
+  document.getElementById('editBar').style.display = 'none';
+  document.getElementById('code-wrap').classList.remove('visible');
+  activeTab = null;
+  renderTabs();
+}
+
+function closeTab(id) {
+  const tab = tabs.find(t => t.id === id);
+  if (tab && tab.dirty && !confirm(`"${tab.name}" a des modifications non sauvegardées. Fermer quand même ?`)) return;
+  tabs = tabs.filter(t => t.id !== id);
+  if (activeTab === id) {
+    const last = tabs[tabs.length - 1];
+    if (last) activateTab(last.id);
+    else showWelcome();
+  } else {
+    renderTabs();
+  }
+}
+
+// ──────────────────────────────────────────────────
+// EDITOR
+// ──────────────────────────────────────────────────
+const codeArea = document.getElementById('codeArea');
+
+codeArea.addEventListener('input', () => {
+  const tab = tabs.find(t => t.id === activeTab);
+  if (!tab) return;
+  tab.content = codeArea.value;
+  tab.dirty = true;
+  updateLineNums(codeArea.value);
+  updateStatusBar(tab);
+  renderTabs();
+});
+
+codeArea.addEventListener('scroll', () => {
+  document.getElementById('lineNums').scrollTop = codeArea.scrollTop;
+});
+
+codeArea.addEventListener('keydown', e => {
+  // Tab → indent
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = codeArea.selectionStart;
+    const v = codeArea.value;
+    codeArea.value = v.slice(0, s) + '  ' + v.slice(codeArea.selectionEnd);
+    codeArea.selectionStart = codeArea.selectionEnd = s + 2;
+    const tab = tabs.find(t => t.id === activeTab);
+    if (tab) { tab.content = codeArea.value; tab.dirty = true; renderTabs(); }
+  }
+  // Ctrl+S → save
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    saveActive();
+  }
+});
+
+function updateLineNums(content) {
+  const lines = content.split('\n').length;
+  const ln = document.getElementById('lineNums');
+  let html = '';
+  for (let i = 1; i <= lines; i++) html += i + '\n';
+  ln.textContent = html;
+}
+
+function updateStatusBar(tab) {
+  const lines = tab.content.split('\n').length;
+  document.getElementById('sbLines').textContent = lines + ' ligne' + (lines > 1 ? 's' : '');
+  const bytes = new TextEncoder().encode(tab.content).length;
+  document.getElementById('sbSize').textContent = fmtSize(bytes);
+}
+
+// ──────────────────────────────────────────────────
+// SAVE
+// ──────────────────────────────────────────────────
+async function saveActive() {
+  const tab = tabs.find(t => t.id === activeTab);
+  if (!tab) return;
+  try {
+    const bytes = new TextEncoder().encode(tab.content);
+    const b64 = btoa(String.fromCharCode(...bytes));
+    await api('put', { path: tab.path, content: b64 });
+    tab.dirty = false;
+    renderTabs();
+    toast('Sauvegardé ✓', 'ok');
+  } catch(e) {
+    toast(e.message, 'err');
+  }
+}
+
+document.getElementById('btnSave').addEventListener('click', saveActive);
+
+document.getElementById('btnDownload').addEventListener('click', () => {
+  const tab = tabs.find(t => t.id === activeTab);
+  if (!tab) return;
+  const blob = new Blob([tab.content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = tab.name;
+  a.click();
+});
+
+document.getElementById('btnSaveAs').addEventListener('click', () => {
+  const tab = tabs.find(t => t.id === activeTab);
+  if (!tab) return;
+  openModal('Enregistrer sous', tab.path, async (val) => {
+    try {
+      const bytes = new TextEncoder().encode(tab.content);
+      const b64 = btoa(String.fromCharCode(...bytes));
+      await api('put', { path: val, content: b64 });
+      tab.path = val;
+      tab.name = val.split('/').pop();
+      tab.dirty = false;
+      renderTabs();
+      activateTab(tab.id);
+      toast('Sauvegardé sous ' + tab.name, 'ok');
+    } catch(e) { toast(e.message, 'err'); }
+  });
+});
+
+// ──────────────────────────────────────────────────
+// NAVIGATION BUTTONS
+// ──────────────────────────────────────────────────
+document.getElementById('btnUp').addEventListener('click', () => {
+  const parts = currentPath.replace(/\/$/, '').split('/');
+  parts.pop();
+  const parent = parts.join('/') || '/';
+  loadDir(parent);
+});
+
+document.getElementById('btnRefresh').addEventListener('click', () => loadDir(currentPath));
+
+document.getElementById('btnNewFile').addEventListener('click', () => {
+  openModal('Nouveau fichier', 'index.html', async (name) => {
+    const path = (currentPath === '/' ? '' : currentPath) + '/' + name;
+    try {
+      await api('put', { path, content: btoa('') });
+      await loadDir(currentPath);
+      openFile(path, name);
+      toast('Fichier créé', 'ok');
+    } catch(e) { toast(e.message, 'err'); }
+  });
+});
+
+document.getElementById('btnNewDir').addEventListener('click', () => {
+  openModal('Nouveau dossier', 'nouveau-dossier', async (name) => {
+    const path = (currentPath === '/' ? '' : currentPath) + '/' + name;
+    try {
+      await api('mkdir', { path });
+      await loadDir(currentPath);
+      toast('Dossier créé', 'ok');
+    } catch(e) { toast(e.message, 'err'); }
+  });
+});
+
+// ──────────────────────────────────────────────────
+// UPLOAD
+// ──────────────────────────────────────────────────
+document.getElementById('btnUpload').addEventListener('click', () => {
+  document.getElementById('fileInput').click();
+});
+
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  for (const file of e.target.files) {
+    await uploadFile(file);
+  }
+  e.target.value = '';
+  await loadDir(currentPath);
+});
+
+async function uploadFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const b64 = reader.result.split(',')[1];
+      const path = (currentPath === '/' ? '' : currentPath) + '/' + file.name;
+      try {
+        await api('put', { path, content: b64 });
+        toast(file.name + ' uploadé', 'ok');
+        resolve();
+      } catch(e) { toast(e.message, 'err'); reject(e); }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Drag & drop on editor area
+const editorArea = document.getElementById('editor-area');
+const dropZone = document.getElementById('dropZone');
+
+editorArea.addEventListener('dragover', e => {
+  e.preventDefault();
+  if (connected) dropZone.classList.add('show');
+});
+editorArea.addEventListener('dragleave', () => dropZone.classList.remove('show'));
+editorArea.addEventListener('drop', async e => {
+  e.preventDefault();
+  dropZone.classList.remove('show');
+  if (!connected) return;
+  for (const file of e.dataTransfer.files) {
+    await uploadFile(file);
+  }
+  await loadDir(currentPath);
+});
+
+// ──────────────────────────────────────────────────
+// CONTEXT MENU
+// ──────────────────────────────────────────────────
+function showCtx(x, y, type) {
+  const m = document.getElementById('ctxMenu');
+  m.style.display = 'block';
+  m.style.left = x + 'px';
+  m.style.top  = y + 'px';
+  document.getElementById('ctx-open').style.display = type === 'file' ? 'block' : 'none';
+  document.getElementById('ctx-download').style.display = type === 'file' ? 'block' : 'none';
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('ctxMenu').style.display = 'none';
+});
+
+document.getElementById('ctx-open').addEventListener('click', () => {
+  if (ctxTarget && ctxTarget.type === 'file') openFile(ctxTarget.path, ctxTarget.name);
+});
+
+document.getElementById('ctx-rename').addEventListener('click', () => {
+  if (!ctxTarget) return;
+  openModal('Renommer', ctxTarget.name, async (newName) => {
+    const parentPath = ctxTarget.path.substring(0, ctxTarget.path.lastIndexOf('/')) || '/';
+    const newPath = (parentPath === '/' ? '' : parentPath) + '/' + newName;
+    try {
+      await api('rename', { from: ctxTarget.path, to: newPath });
+      await loadDir(currentPath);
+      toast('Renommé', 'ok');
+    } catch(e) { toast(e.message, 'err'); }
+  });
+});
+
+document.getElementById('ctx-download').addEventListener('click', async () => {
+  if (!ctxTarget || ctxTarget.type !== 'file') return;
+  try {
+    const d = await api('get', { path: ctxTarget.path });
+    const bytes = Uint8Array.from(atob(d.content), c => c.charCodeAt(0));
+    const blob = new Blob([bytes]);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = ctxTarget.name;
+    a.click();
+    toast('Téléchargé', 'ok');
+  } catch(e) { toast(e.message, 'err'); }
+});
+
+document.getElementById('ctx-delete').addEventListener('click', async () => {
+  if (!ctxTarget) return;
+  if (!confirm(`Supprimer "${ctxTarget.name}" ?`)) return;
+  try {
+    await api('delete', { path: ctxTarget.path, type: ctxTarget.type });
+    // Close tab if open
+    const tab = tabs.find(t => t.path === ctxTarget.path);
+    if (tab) closeTab(tab.id);
+    await loadDir(currentPath);
+    toast('Supprimé', 'ok');
+  } catch(e) { toast(e.message, 'err'); }
+});
+
+// ──────────────────────────────────────────────────
+// MODAL
+// ──────────────────────────────────────────────────
+let modalCallback = null;
+
+function openModal(title, defaultVal, cb) {
+  modalCallback = cb;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-input').value = defaultVal;
+  document.getElementById('modal-overlay').classList.add('show');
+  setTimeout(() => {
+    const inp = document.getElementById('modal-input');
+    inp.focus();
+    inp.select();
+  }, 50);
+}
+
+document.getElementById('modal-ok').addEventListener('click', () => {
+  const val = document.getElementById('modal-input').value.trim();
+  if (!val) return;
+  document.getElementById('modal-overlay').classList.remove('show');
+  if (modalCallback) modalCallback(val);
+});
+
+document.getElementById('modal-cancel').addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('show');
+});
+
+document.getElementById('modal-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('modal-ok').click();
+  if (e.key === 'Escape') document.getElementById('modal-cancel').click();
+});
+
+// Init line nums
+updateLineNums('');
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+{
+  "name": "ftp-studio",
+  "version": "1.0.0",
+  "dependencies": {
+    "basic-ftp": "^5.0.5"
+  }
+}
